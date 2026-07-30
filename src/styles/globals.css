@@ -24,6 +24,7 @@
 
 	body {
 		@apply h-full bg-none;
+		overflow-y: scroll;
 	}
 	* {
 		@apply border-border;
