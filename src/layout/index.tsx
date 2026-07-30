@@ -103,10 +103,15 @@ export default function Layout({ children }: PropsWithChildren) {
     return () => clearTimeout(fallback)
   }, [transitionPhase])
 
-  // hide scrollbars while covered (fixed overlay can't paint over native scrollbar tracks);
-  // restore on reveal so the reflow happens behind the still-opaque overlay
+  // hide scrollbars during entire transition — the fixed overlay cannot paint over
+  // native scrollbar tracks, and restoring during reveal makes scrollbars flash
+  // while the overlay is still fading out
   useEffect(() => {
-    document.documentElement.style.overflow = transitionPhase === 'cover' ? 'hidden' : ''
+    if (transitionPhase !== 'idle') {
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      document.documentElement.style.overflow = ''
+    }
     return () => {
       document.documentElement.style.overflow = ''
     }
@@ -348,13 +353,12 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Main content */}
       {isFullBleed ? (
-        <main className='relative z-[1] flex-1' style={transitionPhase === 'cover' ? { animation: 'page-glitch 0.3s steps(2) 1' } : undefined}>
+        <main className='relative z-[1] flex-1'>
           {children}
         </main>
       ) : (
         <main
           className='relative z-[1] mx-auto w-full max-w-[720px] flex-1 px-6 py-12'
-          style={transitionPhase === 'cover' ? { animation: 'page-glitch 0.3s steps(2) 1' } : undefined}
         >
           {children}
         </main>

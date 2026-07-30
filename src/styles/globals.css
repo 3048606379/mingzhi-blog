@@ -17,14 +17,14 @@
 }
 
 @layer base {
-	html {
-		@apply text-primary bg-bg h-full leading-tight;
-		scroll-behavior: smooth;
-	}
+  html {
+    @apply text-primary bg-bg h-full leading-tight overflow-x-hidden;
+    scroll-behavior: smooth;
+  }
 
-	body {
-		@apply h-full bg-none;
-	}
+  body {
+    @apply h-full bg-none overflow-x-hidden;
+  }
 	* {
 		@apply border-border;
 	}

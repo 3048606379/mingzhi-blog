@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSplashStore } from '@/hooks/use-splash'
 
 const TITLE = 'TENET'
@@ -63,39 +63,45 @@ export default function SplashScreen() {
 	const [logCount, setLogCount] = useState(0)
 	const [clock, setClock] = useState('--:--:--')
 
-	useEffect(() => {
-		document.body.style.overflow = 'hidden'
-		document.documentElement.style.overflow = 'hidden'
+  // keep a ref so the closing phase knows whether the first mount effect ran
+  const restored = useRef(false)
 
-		setClock(new Date().toLocaleTimeString('en-GB'))
-		const clockTimer = setInterval(() => setClock(new Date().toLocaleTimeString('en-GB')), 1000)
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
 
-		const logTimer = setInterval(() => {
-			setLogCount(count => {
-				if (count >= LOG_LINES.length) {
-					clearInterval(logTimer)
-					return count
-				}
-				return count + 1
-			})
-		}, 320)
+    setClock(new Date().toLocaleTimeString('en-GB'))
+    const clockTimer = setInterval(() => setClock(new Date().toLocaleTimeString('en-GB')), 1000)
 
-		const progressTimer = setInterval(() => {
-			setProgress(value => {
-				const next = Math.min(100, value + Math.random() * 3 + 1)
-				if (next >= 100) clearInterval(progressTimer)
-				return next
-			})
-		}, 40)
+    const logTimer = setInterval(() => {
+      setLogCount(count => {
+        if (count >= LOG_LINES.length) {
+          clearInterval(logTimer)
+          return count
+        }
+        return count + 1
+      })
+    }, 320)
 
-		return () => {
-			clearInterval(clockTimer)
-			clearInterval(logTimer)
-			clearInterval(progressTimer)
-			document.body.style.overflow = ''
-			document.documentElement.style.overflow = ''
-		}
-	}, [])
+    const progressTimer = setInterval(() => {
+      setProgress(value => {
+        const next = Math.min(100, value + Math.random() * 3 + 1)
+        if (next >= 100) clearInterval(progressTimer)
+        return next
+      })
+    }, 40)
+
+    return () => {
+      clearInterval(clockTimer)
+      clearInterval(logTimer)
+      clearInterval(progressTimer)
+      if (!restored.current) {
+        document.body.style.overflow = ''
+        document.documentElement.style.overflow = ''
+        restored.current = true
+      }
+    }
+  }, [])
 
 	useEffect(() => {
 		if (progress < 100 || phase !== 'show') return
@@ -106,14 +112,16 @@ export default function SplashScreen() {
 		return () => clearTimeout(closeTimer)
 	}, [progress, phase])
 
-	useEffect(() => {
-		if (phase !== 'closing') return
-		const doneTimer = setTimeout(() => {
-			setPhase('done')
-			document.body.style.overflow = ''
-		}, 700)
-		return () => clearTimeout(doneTimer)
-	}, [phase])
+  useEffect(() => {
+    if (phase !== 'closing') return
+    const doneTimer = setTimeout(() => {
+      setPhase('done')
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+      restored.current = true
+    }, 700)
+    return () => clearTimeout(doneTimer)
+  }, [phase])
 
 	if (phase === 'done') return null
 
