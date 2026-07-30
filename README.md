@@ -1,70 +1,64 @@
-# 2025 Blog
+# Tenet Blog
 
-基于 **Next.js 16 + React 19 + Tailwind CSS 4** 的个人博客，内容通过 **GitHub App** 直接管理：在前端页面编辑内容，自动提交到 GitHub 仓库并触发部署。
+基于 **Next.js 16 + React 19 + Tailwind CSS 4** 的个人博客。内容直接存本地文件系统，通过密码鉴权在线编辑，发布即时生效，无需等待部署。
 
-> 原项目：https://github.com/YYsuni/2025-blog-public
+> 原项目：[2025-blog-public](https://github.com/YYsuni/2025-blog-public)
 
 ## 功能
 
-- **博客** `/blog`：Markdown 写作（`/write`），支持代码高亮（Shiki）、KaTeX 公式、图片上传
+- **博客** `/blog`：Markdown 写作（`/write`），代码高亮（Shiki）、KaTeX 公式、图片上传、分级标题自动生成目录
 - **项目 / 分享 / 友链 / 关于**：`/projects`、`/share`、`/bloggers`、`/about`
-- **图片** `/pictures`：相册展示与随机布局
-- **小工具**：`/snippets`、`/svgs`、`/image-toolbox`、`/music`、`/clock` 等
-- 全站页面右上角带编辑按钮，登录 GitHub App 私钥后即可在线改内容
-- 暗色终端风格 UI：等宽字体、网格背景、自定义光标、页面 glitch 转场、悬浮导航
-
-## 技术栈
-
-Next.js 16（Turbopack）· React 19 · TypeScript · Tailwind CSS 4 · Motion · Zustand · SWR · sonner
+- **图片** `/pictures`：相册展示、上传压缩
+- **小工具**：`/snippets`、`/svgs`、`/image-toolbox`、`/music`、`/clock`、`/live2d` 等
+- 暗色终端风格 UI：等宽字体、网格背景、自定义光标、页面 glitch 转场、悬浮导航栏
+- 全站内容通过前端 UI 在线编辑，密码鉴权即改即生效
 
 ## 本地开发
 
 ```bash
-pnpm i
-pnpm dev        # http://localhost:2025
-pnpm build      # 生产构建
-pnpm start      # 启动生产服务
-pnpm svg        # 重新生成 svgs 索引
+npm install
+cp .env.example .env    # 编辑密码
+npm run dev             # http://localhost:2025
 ```
 
-## 部署（Vercel）
+## 部署（自有服务器）
 
-1. Fork / 导入本仓库到 Vercel，无需额外配置，直接部署
-2. 在 GitHub **Developer Settings → New GitHub App** 创建应用：
-   - 只需勾选仓库的 **Contents: Write** 权限，关闭 Webhook
-   - 创建后生成 **Private Key**（自动下载，务必保管好，不要公开上传）
-   - 记录页面的 **App ID**，并只授权安装到当前博客仓库
-3. 配置环境变量（也可直接改 `src/consts.ts`）：
-
-```ts
-export const GITHUB_CONFIG = {
-	OWNER: process.env.NEXT_PUBLIC_GITHUB_OWNER,   // GitHub 用户名
-	REPO: process.env.NEXT_PUBLIC_GITHUB_REPO,     // 仓库名
-	BRANCH: process.env.NEXT_PUBLIC_GITHUB_BRANCH, // 分支，默认 main
-	APP_ID: process.env.NEXT_PUBLIC_GITHUB_APP_ID  // GitHub App ID
-}
+```bash
+# 1. 上传项目到服务器
+# 2. 服务器上
+cp .env.example .env    # 编辑 AUTH_PASSWORD 和 PORT
+npm install
+npm run build
+npm run start           # 或使用宝塔面板 / PM2 守护进程
 ```
 
-4. 重新部署一次使变量生效（push 代码或手动触发均可）
+> 不需要数据库，不需要 GitHub App，不需要等部署。发布即生效。
 
-完成后即可在网站前端直接编辑内容。注意：前端提示保存成功后，需等后台部署完成再刷新页面才能看到更新。
+## 环境变量
+
+| 变量 | 默认值 | 说明 |
+|---|---|---|
+| `AUTH_PASSWORD` | `admin` | 后台操作密码 |
+| `PORT` | `2025` | 服务端口 |
 
 ## 目录结构
 
 ```
 src/
-├── app/            # 路由页面（(home) 为首页，其余一目录一路由）
-├── components/     # 全局组件（导航、卡片、光标、背景等）
-├── layout/         # 全局布局与背景效果
-├── hooks/          # 自定义 hooks（页面转场等）
+├── app/            # 路由页面
+│   ├── (home)/     # 首页
+│   ├── write/      # 文章编辑器
+│   ├── blog/       # 博客列表与详情
+│   ├── api/        # 后端 API（文件读写）
+│   └── ...         # 其他页面
+├── components/     # 全局组件
+├── layout/         # 全局布局
+├── hooks/          # 自定义 hooks
 ├── lib/            # 工具函数
 ├── config/         # 站点配置
-├── consts.ts       # GitHub App 等常量
 └── styles/         # 全局样式与动画
 ```
 
-首页内容位于 `src/app/(home)/`，每张卡片一个文件（如 `hi-card.tsx`），改哪张卡片就编辑对应文件。
-
 ## License
 
-见 [LICENSE](./LICENSE)。
+MIT
