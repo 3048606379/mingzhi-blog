@@ -16,7 +16,7 @@ const getRandomSnippet = (list: string[]) => (list.length === 0 ? '' : list[Math
 export default function Page() {
 	const [snippets, setSnippets] = useState<string[]>(initialList as string[])
 	const [originalSnippets, setOriginalSnippets] = useState<string[]>(initialList as string[])
-	const [currentSnippet, setCurrentSnippet] = useState<string>(getRandomSnippet(initialList as string[]))
+	const [currentSnippet, setCurrentSnippet] = useState('')
 	const [isEditMode, setIsEditMode] = useState(false)
 	const [isSaving, setIsSaving] = useState(false)
 	const [isManageOpen, setIsManageOpen] = useState(false)
@@ -27,6 +27,12 @@ export default function Page() {
 	const { isAuth, login } = useAuthStore()
 	const { siteContent } = useConfigStore()
 	const hideEditButton = siteContent.hideEditButton ?? false
+
+	// pick the initial random snippet only on the client — a random useState
+	// initializer would differ between SSR and hydration (React error #418)
+	useEffect(() => {
+		setCurrentSnippet(getRandomSnippet(initialList as string[]))
+	}, [])
 
 	useEffect(() => {
 		fetch('/data/snippets/list.json').then(r => {

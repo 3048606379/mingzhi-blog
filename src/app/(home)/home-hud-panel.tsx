@@ -106,6 +106,16 @@ function getGreeting() {
 	return 'GOOD NIGHT'
 }
 
+// resolve on the client only — server and browser timezones differ, so calling
+// getGreeting() during render produces different text (React error #418)
+function useGreeting() {
+	const [greeting, setGreeting] = useState('')
+	useEffect(() => {
+		setGreeting(getGreeting())
+	}, [])
+	return greeting
+}
+
 function socialHref(item: SocialItem) {
 	if (item.type === 'email') return `mailto:${item.value}`
 	if (/^https?:\/\//.test(item.value)) return item.value
@@ -115,6 +125,7 @@ function socialHref(item: SocialItem) {
 export default function HomeHudPanel() {
 	const navigate = useTransitionNavigate()
 	const clock = useClock()
+	const greeting = useGreeting()
 	const { siteContent } = useConfigStore()
 	const { blog, loading } = useLatestBlog()
 
@@ -172,7 +183,7 @@ export default function HomeHudPanel() {
 					</div>
 					<div className='text-linear mt-2 text-3xl font-semibold tracking-[0.15em]'>{displayName}</div>
 					<div className='mt-2 text-[10px] tracking-[0.25em]' style={{ color: '#666' }}>
-						{getGreeting()}, WELCOME BACK.
+						{greeting && `${greeting}, `}WELCOME BACK.
 					</div>
 				</div>
 			</section>
