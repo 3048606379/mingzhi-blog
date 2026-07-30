@@ -66,6 +66,21 @@ export default function Layout({ children }: PropsWithChildren) {
   const showFloating = isListLike && navCollapsed && transitionPhase === 'idle'
   const transitioning = transitionPhase !== 'idle'
 
+  // Lock scroll during page transitions
+  useEffect(() => {
+    if (transitioning) {
+      document.body.style.overflow = 'hidden'
+      document.documentElement.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+      document.documentElement.style.overflow = ''
+    }
+  }, [transitioning])
+
   useEffect(() => {
     if (transitionPhase !== 'cover') return
     setTypedLabel('')
