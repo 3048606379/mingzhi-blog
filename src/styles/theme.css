@@ -1,0 +1,16 @@
+@theme {
+	--color-primary: #e8e6e3;
+	--color-secondary: #8a8680;
+	--color-brand-secondary: #7c3aed;
+	--color-bg: #000000;
+	--color-border: #1a1a1a;
+	--color-brand: #a78bfa;
+	--color-card: #ffffff08;
+	--color-article: #ffffff08;
+
+	--font-averia: 'Averia Gruesa Libre', sans-serif;
+	--font-sans:
+		'JetBrains Mono', 'PingFang SC', -apple-system, system-ui, 'Segoe UI', Consolas, monospace;
+	--font-mono:
+		'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}

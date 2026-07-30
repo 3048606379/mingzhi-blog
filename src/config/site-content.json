@@ -1,0 +1,63 @@
+{
+	"meta": {
+		"title": "铭秩",
+		"description": "铭秩的个人博客 — 记录代码、探索与思考",
+		"username": "铭秩"
+	},
+	"theme": {
+		"colorBrand": "#a78bfa",
+		"colorPrimary": "#e8e6e3",
+		"colorSecondary": "#8a8680",
+		"colorBrandSecondary": "#7c3aed",
+		"colorBg": "#000000",
+		"colorBorder": "#1a1a1a",
+		"colorCard": "#ffffff08",
+		"colorArticle": "#ffffff08"
+	},
+	"backgroundColors": [
+		"#000000"
+	],
+	"artImages": [
+		{
+			"id": "cat",
+			"url": "/images/art/cat.png"
+		},
+		{
+			"id": "a46372ff45bc5524",
+			"url": "/images/art/a46372ff45bc5524.jpg"
+		},
+		{
+			"id": "1c7b726fe720679b",
+			"url": "/images/art/1c7b726fe720679b.jpg"
+		}
+	],
+	"currentArtImageId": "cat",
+	"backgroundImages": [
+		{
+			"id": "",
+			"url": ""
+		}
+	],
+	"currentBackgroundImageId": "",
+	"socialButtons": [
+		{
+			"id": "github",
+			"type": "github",
+			"value": "https://github.com/3048606379",
+			"label": "Github",
+			"order": 3
+		}
+	],
+	"clockShowSeconds": false,
+	"summaryInContent": false,
+	"isCachePem": false,
+	"hideEditButton": false,
+	"enableCategories": true,
+	"currentHatIndex": 3,
+	"hatFlipped": false,
+	"enableChristmas": false,
+	"beian": {
+		"text": "",
+		"link": ""
+	}
+}

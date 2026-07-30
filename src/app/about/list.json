@@ -1,0 +1,8 @@
+{
+	"title": "关于本站",
+	"description": "基于 Next.js 的个人博客，本地服务器部署，内容即时生效",
+	"onlineCount": 1,
+	"startDate": "2026-07-29T00:00:00",
+	"icp": "",
+	"content": "📦本地文件存储，无需等待部署即可实时更新\n\n✏️通过可视化 Markdown 编辑器直接编写发布\n\n🔐密码鉴权直连本地 API，无需 GitHub 密钥\n\n📷内置图床与相册，图片自动压缩去重\n\n## 技术栈\n\n- Next.js 16 + Turbopack\n- React 19\n- TypeScript\n- Tailwind CSS 4\n- Motion\n- Zustand\n- SWR"
+}
