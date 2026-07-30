@@ -2,7 +2,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import siteContent from '@/config/site-content.json'
-import blogIndex from '@/../public/blogs/index.json'
 import type { BlogIndexItem } from '@/app/blog/types'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://mingzhi-wiki.art'
@@ -11,7 +10,15 @@ const SITE_ORIGIN = SITE_URL.replace(/\/$/, '')
 const FEED_URL = `${SITE_ORIGIN}${FEED_PATH}`
 const PUBLIC_DIR = path.join(process.cwd(), 'public')
 
-const blogs = blogIndex as BlogIndexItem[]
+const readBlogIndex = (): BlogIndexItem[] => {
+	try {
+		const raw = fs.readFileSync(path.join(PUBLIC_DIR, 'blogs', 'index.json'), 'utf-8')
+		const parsed = JSON.parse(raw)
+		return Array.isArray(parsed) ? (parsed as BlogIndexItem[]) : []
+	} catch {
+		return []
+	}
+}
 
 const escapeXml = (value: string): string =>
 	value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')
@@ -86,14 +93,13 @@ const serializeItem = (item: BlogIndexItem): string => {
 		</item>`.trim()
 }
 
-export const dynamic = 'force-static'
-export const revalidate = false
+export const dynamic = 'force-dynamic'
 
 export function GET(): Response {
 	const title = siteContent.meta?.title || '2025 Blog'
 	const description = siteContent.meta?.description || 'Latest updates from 2025 Blog'
 
-	const items = blogs
+	const items = readBlogIndex()
 		.filter(item => item?.slug)
 		.map(serializeItem)
 		.join('')
