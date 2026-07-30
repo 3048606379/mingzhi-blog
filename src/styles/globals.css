@@ -20,7 +20,6 @@
 	html {
 		@apply text-primary bg-bg h-full leading-tight;
 		scroll-behavior: smooth;
-		overflow-y: scroll;
 	}
 
 	body {
