@@ -101,7 +101,15 @@ export default function Layout({ children }: PropsWithChildren) {
       setTimeout(() => setPhase('idle'), 500)
     }, 3000)
     return () => clearTimeout(fallback)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transitionPhase])
+
+  // hide scrollbars while covered (fixed overlay can't paint over native scrollbar tracks);
+  // restore on reveal so the reflow happens behind the still-opaque overlay
+  useEffect(() => {
+    document.documentElement.style.overflow = transitionPhase === 'cover' ? 'hidden' : ''
+    return () => {
+      document.documentElement.style.overflow = ''
+    }
   }, [transitionPhase])
 
   // Esc: navigate to parent route
