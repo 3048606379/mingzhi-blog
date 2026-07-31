@@ -326,12 +326,22 @@
 	}
 }
 
+/* one-shot: keep buttons non-interactive during their entry, then restore */
+@keyframes hud-buttons-enable {
+	from {
+		pointer-events: none;
+	}
+	to {
+		pointer-events: none;
+	}
+}
+
 /* HUD dialog skin: square corners, transparent bg, purple focus */
 .hud-dialog {
 	border-radius: 0 !important;
 	background-color: #000 !important;
 	border: 1px solid var(--color-border) !important;
-	box-shadow: 0 0 40px rgba(167, 139, 250, 0.08) !important;
+	box-shadow: none !important;
 }
 
 .hud-dialog .card,

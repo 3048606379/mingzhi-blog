@@ -34,6 +34,7 @@ export default function Page() {
 	const [pendingAction, setPendingAction] = useState<'save' | 'delete' | null>(null)
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 	const [loadError, setLoadError] = useState(false)
+	const [editLabel, setEditLabel] = useState('')
 	const router = useRouter()
 
 	const { isAuth, login } = useAuthStore()
@@ -152,6 +153,21 @@ export default function Page() {
 	}
 
 	useEffect(() => {
+		if (!isEditMode) {
+			setEditLabel('')
+			return
+		}
+		const label = 'EDIT_MODE'
+		let i = 0
+		const timer = setInterval(() => {
+			i++
+			setEditLabel(label.slice(0, i))
+			if (i >= label.length) clearInterval(timer)
+		}, 35)
+		return () => clearInterval(timer)
+	}, [isEditMode])
+
+	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if (!isEditMode && (e.ctrlKey || e.metaKey) && e.key === ',') {
 				e.preventDefault()
@@ -172,22 +188,48 @@ export default function Page() {
 				<div className='flex items-center justify-between' style={{ animation: 'hud-row-in 0.4s ease both' }}>
 					<div className='text-[9px] tracking-[0.35em]' style={{ color: '#444' }}>
 						{'// PICTURES'} · {pictures.length} GROUPS
-						{isEditMode && <span style={{ color: 'var(--color-brand)' }}> · EDIT_MODE</span>}
+						{isEditMode && (
+							<span style={{ color: 'var(--color-brand)' }}>
+								{' '}· {editLabel}
+								<span style={{ animation: 'splash-blink 0.6s step-end infinite' }}>▋</span>
+							</span>
+						)}
 					</div>
-					<div className='flex items-center gap-2 max-sm:hidden'>
+					<div
+						className='flex items-center gap-2 max-sm:hidden'
+						style={
+							isEditMode
+								? { paddingLeft: 24, animation: 'hud-buttons-enable 0.36s ease' }
+								: undefined
+						}>
 						{isEditMode ? (
 							<>
-								<button className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`} style={btnStyle} onClick={() => router.push('/image-toolbox')}>
+								<button
+									className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`}
+									style={{ ...btnStyle, animation: 'hud-row-in 0.4s ease 0.05s both' }}
+									onClick={() => router.push('/image-toolbox')}>
 									&gt; 压缩工具
 								</button>
-								<button className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`} style={btnStyle} onClick={handleCancel} disabled={isSaving}>
+								<button
+									className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`}
+									style={{ ...btnStyle, animation: 'hud-row-in 0.4s ease 0.12s both' }}
+									onClick={handleCancel}
+									disabled={isSaving}>
 									&gt; 取消
 								</button>
-								<button className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`} style={btnStyle} onClick={() => setIsUploadDialogOpen(true)}>
+								<button
+									className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`}
+									style={{ ...btnStyle, animation: 'hud-row-in 0.4s ease 0.19s both' }}
+									onClick={() => setIsUploadDialogOpen(true)}>
 									&gt; 上传
 								</button>
-								<button className={`${btnBase} hover:bg-[rgba(167,139,250,0.1)]`}
-									style={{ borderColor: 'var(--color-brand)', color: 'var(--color-brand)' }}
+								<button
+									className={`${btnBase} hover:bg-[rgba(167,139,250,0.1)]`}
+									style={{
+										borderColor: 'var(--color-brand)',
+										color: 'var(--color-brand)',
+										animation: 'hud-row-in 0.4s ease 0.26s both'
+									}}
 									onClick={handleSaveClick}
 									disabled={isSaving}>
 									&gt; {isSaving ? '保存中...' : buttonText}

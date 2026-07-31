@@ -37,7 +37,10 @@ export function HudGallery({ pictures, isEditMode, onDeleteSingle, onDeleteGroup
 									</span>
 								)}
 								{isEditMode && (
-									<button onClick={() => onDeleteGroup(picture)} className='shrink-0 tracking-[0.15em]' style={{ color: '#f87171' }}>
+									<button
+										onClick={() => onDeleteGroup(picture)}
+										className='shrink-0 tracking-[0.15em]'
+										style={{ color: '#f87171', animation: 'hud-row-in 0.3s ease both' }}>
 										&gt; 删除整组
 									</button>
 								)}
@@ -48,7 +51,14 @@ export function HudGallery({ pictures, isEditMode, onDeleteSingle, onDeleteGroup
 									counter++
 									const single = urls.length === 1
 									return (
-										<div key={ii} className='group relative aspect-square overflow-hidden border' style={{ borderColor: 'var(--color-border)' }}>
+										<div
+											key={ii}
+											className='group relative aspect-square overflow-hidden border transition-colors duration-300'
+											style={{
+												borderColor: isEditMode ? 'var(--color-brand)' : 'var(--color-border)',
+												boxShadow: isEditMode ? 'inset 0 0 0 1px rgba(167, 139, 250, 0.25)' : 'none',
+												transition: 'border-color 0.3s ease, box-shadow 0.3s ease'
+											}}>
 											<img
 												src={url}
 												alt=''
@@ -64,7 +74,7 @@ export function HudGallery({ pictures, isEditMode, onDeleteSingle, onDeleteGroup
 											</span>
 											{isEditMode && (
 												<button
-													className='absolute top-1 right-1 hidden px-1 text-xs group-hover:block'
+													className='absolute top-1 right-1 px-1 text-xs opacity-0 transition-opacity duration-200 group-hover:opacity-100'
 													style={{ color: '#f87171', backgroundColor: 'rgba(0,0,0,0.7)' }}
 													onClick={() => onDeleteSingle(picture.id, single ? 'single' : ii)}
 												>
