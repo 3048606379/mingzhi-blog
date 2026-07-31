@@ -41,6 +41,24 @@ export default function CustomCursor() {
 			label.style.opacity = text ? '1' : '0'
 		}
 
+		const filterEl = (el: HTMLElement | null): HTMLElement | null => {
+			if (el && el.closest('[data-cursor-no-magnetic]') && !el.hasAttribute('data-cursor-magnetic')) return null
+			return el
+		}
+
+		const activate = (el: HTMLElement) => {
+			const rect = el.getBoundingClientRect()
+			snap = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
+			setDot(rect.width + 12, rect.height + 12, true)
+			setLabel(el.getAttribute('data-cursor-label') || el.getAttribute('aria-label') || '')
+		}
+
+		const release = () => {
+			snap = null
+			setDot(DOT_SIZE, DOT_SIZE, false)
+			setLabel('')
+		}
+
 		const onMouseMove = (e: MouseEvent) => {
 			mouse.x = e.clientX
 			mouse.y = e.clientY
@@ -51,23 +69,12 @@ export default function CustomCursor() {
 			}
 
 			const target = e.target as HTMLElement | null
-			let el = (target?.closest?.(SELECTOR) as HTMLElement | null) ?? null
-			if (el && el.closest('[data-cursor-no-magnetic]') && !el.hasAttribute('data-cursor-magnetic')) {
-				el = null
-			}
+			const el = filterEl((target?.closest?.(SELECTOR) as HTMLElement | null) ?? null)
 
 			if (el !== hoverEl) {
 				hoverEl = el
-				if (el) {
-					const rect = el.getBoundingClientRect()
-					snap = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-					setDot(rect.width + 12, rect.height + 12, true)
-					setLabel(el.getAttribute('data-cursor-label') || el.getAttribute('aria-label') || '')
-				} else {
-					snap = null
-					setDot(DOT_SIZE, DOT_SIZE, false)
-					setLabel('')
-				}
+				if (el) activate(el)
+				else release()
 			}
 
 			if (!hoverEl) {
@@ -92,6 +99,27 @@ export default function CustomCursor() {
 		}
 
 		const tick = () => {
+			if (hoverEl) {
+				if (!hoverEl.isConnected) {
+					// element was removed from the DOM (e.g. route change) — drop the snap
+					hoverEl = null
+					release()
+				} else {
+					// follow the live rect every frame: elements move during scroll
+					// even when the mouse doesn't. shift `rendered` by the same
+					// delta so the box moves 1:1 with the element (no lerp chase
+					// lag) — the lerp below then only smooths mouse-driven motion
+					const rect = hoverEl.getBoundingClientRect()
+					const cx = rect.left + rect.width / 2
+					const cy = rect.top + rect.height / 2
+					if (snap && (cx !== snap.x || cy !== snap.y)) {
+						rendered.x += cx - snap.x
+						rendered.y += cy - snap.y
+					}
+					snap = { x: cx, y: cy }
+					setDot(rect.width + 12, rect.height + 12, true)
+				}
+			}
 			const speed = hoverEl ? 0.18 : 0.28
 			rendered.x = lerp(rendered.x, snap ? snap.x : mouse.x, speed)
 			rendered.y = lerp(rendered.y, snap ? snap.y : mouse.y, speed)
@@ -105,26 +133,20 @@ export default function CustomCursor() {
 			const target = e.target as HTMLElement | null
 			if (target?.closest('a') && hoverEl) {
 				hoverEl = null
-				snap = null
-				setDot(DOT_SIZE, DOT_SIZE, false)
-				setLabel('')
+				release()
 			}
 		}
 
 		const onScroll = () => {
-			if (!hoverEl) return
-			hoverEl = null
-			snap = null
-			setDot(DOT_SIZE, DOT_SIZE, false)
-			setLabel('')
-			const el = (document.elementFromPoint(mouse.x, mouse.y) as HTMLElement | null)?.closest(SELECTOR) as HTMLElement | null
-			if (el && !(el.closest('[data-cursor-no-magnetic]') && !el.hasAttribute('data-cursor-magnetic'))) {
-				hoverEl = el
-				const rect = el.getBoundingClientRect()
-				snap = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 }
-				setDot(rect.width + 12, rect.height + 12, true)
-				setLabel(el.getAttribute('data-cursor-label') || el.getAttribute('aria-label') || '')
-			}
+			// scrolling moves content under a stationary mouse — re-hit-test, but
+			// only act when the hovered element actually changed; re-snapping the
+			// same element here caused release/activate size churn every frame
+			const hit = document.elementFromPoint(mouse.x, mouse.y) as HTMLElement | null
+			const el = filterEl(hit ? (hit.closest(SELECTOR) as HTMLElement | null) : null)
+			if (el === hoverEl) return
+			hoverEl = el
+			if (el) activate(el)
+			else release()
 		}
 
 		raf = requestAnimationFrame(tick)
