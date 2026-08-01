@@ -180,8 +180,8 @@ export async function renderMarkdown(markdown: string): Promise<MarkdownRenderRe
 		]
 	})
 
-	// Pre-process: fix headings missing space after # (e.g. #2 → # 2)
-	markdown = markdown.replace(/^(#{1,6})([^\s#])/gm, '$1 $2')
+	// Pre-process: fix headings missing space after # (e.g. #2 → # 2), including indented lines (up to 3 leading spaces, per CommonMark)
+	markdown = markdown.replace(/^[ \t]{0,3}(#{1,6})([^\s#])/gm, '$1 $2')
 	const tokens = marked.lexer(markdown)
 
 	// Extract TOC from parsed tokens (this correctly skips code blocks)

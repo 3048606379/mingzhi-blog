@@ -32,7 +32,7 @@ pnpm run build
 pnpm run start          # 或使用宝塔面板 / PM2 守护进程
 ```
 
-> 包管理器统一使用 pnpm（`pnpm-lock.yaml`），不要混用 npm 以免依赖版本不一致。
+> 包管理器统一使用 pnpm（`pnpm-lock.yaml`）
 
 > 不需要数据库，不需要 GitHub App，不需要等部署。发布即生效。
 

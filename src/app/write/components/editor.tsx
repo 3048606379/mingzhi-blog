@@ -1,11 +1,16 @@
 import { useWriteStore } from '../stores/write-store'
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 const defaultText = 'text'
 
 export function WriteEditor() {
-	const { form, updateForm, images, addFiles } = useWriteStore()
+	const { form, updateForm, images, addFiles, setEditorRef } = useWriteStore()
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+	useEffect(() => {
+		setEditorRef(textareaRef.current)
+		return () => setEditorRef(null)
+	}, [setEditorRef])
 
 	const insertText = (text: string) => {
 		const textarea = textareaRef.current

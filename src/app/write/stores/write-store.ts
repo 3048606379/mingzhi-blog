@@ -31,6 +31,10 @@ type WriteStore = {
 	addFiles: (files: FileList | File[]) => Promise<ImageItem[]>
 	deleteImage: (id: string) => void
 
+	// Editor textarea ref (for inserting markdown at cursor)
+	editorRef: HTMLTextAreaElement | null
+	setEditorRef: (ref: HTMLTextAreaElement | null) => void
+
 	// Cover state
 	cover: ImageItem | null
 	setCover: (cover: ImageItem | null) => void
@@ -145,6 +149,10 @@ export const useWriteStore = create<WriteStore>((set, get) => ({
 			}
 			return { images: state.images.filter(it => it.id !== id) }
 		}),
+
+	// Editor textarea ref
+	editorRef: null,
+	setEditorRef: ref => set({ editorRef: ref }),
 
 	// Cover state
 	cover: null,

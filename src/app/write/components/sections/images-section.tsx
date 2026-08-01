@@ -1,7 +1,9 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { useWriteStore } from '../../stores/write-store'
+import type { ImageItem } from '../../types'
 import Link from 'next/link'
 
 export function ImagesSection() {
@@ -10,6 +12,18 @@ export function ImagesSection() {
 	const fileInputRef = useRef<HTMLInputElement>(null)
 
 	const coverId = cover?.id ?? null
+
+	const insertAtCursor = (item: ImageItem) => {
+		const textarea = useWriteStore.getState().editorRef
+		if (!textarea) {
+			toast.error('请先点击编辑器正文区域')
+			return
+		}
+		const markdown = item.type === 'url' ? `![](${item.url})` : `![](local-image:${item.id})`
+		textarea.focus()
+		document.execCommand('insertText', false, markdown)
+		toast.success('已插入到光标位置')
+	}
 
 	return (
 		<div style={{ animation: 'hud-row-in 0.4s ease 0.18s both' }}>
@@ -53,7 +67,7 @@ export function ImagesSection() {
 				onChange={e => {
 					const files = e.target.files
 					if (files && files.length > 0) {
-						addFiles(files)
+						void addFiles(files)
 					}
 					if (e.currentTarget) e.currentTarget.value = ''
 				}}
@@ -71,7 +85,9 @@ export function ImagesSection() {
 					onDrop={e => {
 						e.preventDefault()
 						const files = e.dataTransfer.files
-						if (files && files.length) addFiles(files)
+						if (files && files.length) {
+							void addFiles(files)
+						}
 					}}>
 					+
 				</div>
@@ -85,8 +101,10 @@ export function ImagesSection() {
 					return (
 						<div
 							key={item.id}
-							className='group relative aspect-square overflow-hidden border'
-							style={{ borderColor: isCover ? 'var(--color-brand)' : undefined }}>
+							className='group relative aspect-square cursor-pointer overflow-hidden border transition-colors hover:border-[var(--color-brand)]'
+							style={{ borderColor: isCover ? 'var(--color-brand)' : undefined }}
+							title='点击插入到正文光标处'
+							onClick={() => insertAtCursor(item)}>
 							<img
 								src={src}
 								className='h-full w-full object-cover'
@@ -106,7 +124,10 @@ export function ImagesSection() {
 									type='button'
 									className='px-1 text-xs'
 									style={{ color: '#f87171', backgroundColor: 'rgba(0,0,0,0.7)' }}
-									onClick={() => deleteImage(item.id)}>
+									onClick={e => {
+										e.stopPropagation()
+										deleteImage(item.id)
+									}}>
 									×
 								</button>
 							</div>
