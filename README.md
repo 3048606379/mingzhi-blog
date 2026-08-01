@@ -16,9 +16,9 @@
 ## 本地开发
 
 ```bash
-npm install
+pnpm install            # 需要 Node.js 18+（推荐用 corepack 启用 pnpm）
 cp .env.example .env    # 编辑密码
-npm run dev             # http://localhost:2025
+pnpm run dev            # http://localhost:2025
 ```
 
 ## 部署（自有服务器）
@@ -27,10 +27,12 @@ npm run dev             # http://localhost:2025
 # 1. 上传项目到服务器
 # 2. 服务器上
 cp .env.example .env    # 编辑 AUTH_PASSWORD 和 PORT
-npm install
-npm run build
-npm run start           # 或使用宝塔面板 / PM2 守护进程
+pnpm install
+pnpm run build
+pnpm run start          # 或使用宝塔面板 / PM2 守护进程
 ```
+
+> 包管理器统一使用 pnpm（`pnpm-lock.yaml`），不要混用 npm 以免依赖版本不一致。
 
 > 不需要数据库，不需要 GitHub App，不需要等部署。发布即生效。
 
