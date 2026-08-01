@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import dayjs from 'dayjs'
 import type { Picture } from '../page'
+import { DialogModal } from '@/components/dialog-modal'
 
 type HudGalleryProps = {
 	pictures: Picture[]
@@ -90,11 +91,11 @@ export function HudGallery({ pictures, isEditMode, onDeleteSingle, onDeleteGroup
 				})}
 			</div>
 
-			{preview && (
-				<div className='fixed inset-0 z-50 grid cursor-pointer place-items-center bg-black/90 p-8' onClick={() => setPreview(null)}>
-					<img src={preview} alt='' className='max-h-full max-w-full object-contain' />
-				</div>
-			)}
+			<DialogModal open={preview !== null} onClose={() => setPreview(null)} className='max-w-none bg-transparent p-0'>
+				{preview && (
+					<img src={preview} alt='' className='mx-auto max-h-[90vh] max-w-full border object-contain' style={{ borderColor: 'var(--color-border)' }} />
+				)}
+			</DialogModal>
 		</>
 	)
 }
