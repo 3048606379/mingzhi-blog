@@ -18,7 +18,7 @@ const fetcher = async (url: string) => {
 
 export function useBlogIndex() {
 	const { isAuth } = useAuthStore()
-	const { data, error, isLoading } = useSWR<BlogIndexItem[]>('/api/blogs/index', fetcher, {
+	const { data, error, isLoading, mutate } = useSWR<BlogIndexItem[]>('/api/blogs/index', fetcher, {
 		revalidateOnFocus: false,
 		revalidateOnReconnect: true
 	})
@@ -31,7 +31,8 @@ export function useBlogIndex() {
 	return {
 		items: result,
 		loading: isLoading,
-		error
+		error,
+		mutate
 	}
 }
 
