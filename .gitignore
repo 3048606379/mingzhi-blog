@@ -54,3 +54,4 @@ build.bat
 !/public/blogs/.gitkeep
 /public/data/*
 !/public/data/.gitkeep
+/data/
