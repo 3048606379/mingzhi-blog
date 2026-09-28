@@ -63,7 +63,7 @@ export default function NavColumns() {
 
 	return (
 		<div
-			className='relative flex h-[100dvh] w-full justify-end border-r md:absolute md:inset-y-0 md:left-[62%] md:h-full md:w-[38%] md:[transform:skewX(-15deg)_translateX(-13.4vh)] md:[transform-origin:right_center]'
+			className='relative flex h-[100dvh] w-full border-r md:absolute md:inset-y-0 md:left-[62%] md:h-full md:w-[38%] md:[transform:skewX(-15deg)_translateX(-13.4vh)] md:[transform-origin:right_center]'
 			style={{ borderColor: 'var(--color-border)' }}
 			data-cursor-no-magnetic
 		>
@@ -71,7 +71,7 @@ export default function NavColumns() {
 				<Link
 					key={column.href}
 					href={column.href}
-					className='group relative flex w-16 items-center justify-center border-l no-underline transition-colors duration-300 active:bg-white/5 max-[359px]:w-14 sm:w-24 md:w-auto md:flex-1'
+					className='group relative flex min-w-0 flex-1 items-center justify-center border-l no-underline transition-colors duration-300 active:bg-white/5'
 					style={{
 						borderColor: 'var(--color-border)',
 						opacity: splashDone ? undefined : 0,
