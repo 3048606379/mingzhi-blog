@@ -8,6 +8,7 @@ import CustomCursor from '@/components/custom-cursor'
 import GridFlicker from '@/components/grid-flicker'
 import FloatingNav from '@/components/floating-nav'
 import { useTransitionStore, useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
+import { useSize, useSizeInit } from '@/hooks/use-size'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -22,6 +23,8 @@ const navItems = [
 export default function Layout({ children }: PropsWithChildren) {
   const { siteContent, loadConfig } = useConfigStore()
   const pathname = usePathname()
+  const { maxMD } = useSize()
+  useSizeInit()
   const isHome = pathname === '/'
   const isFullBleed = isHome || pathname.startsWith('/write') || pathname.startsWith('/pictures') || pathname.startsWith('/config') || pathname.startsWith('/blog/')
   const isListLike = !isHome && !isFullBleed
@@ -38,7 +41,7 @@ export default function Layout({ children }: PropsWithChildren) {
   // scroll trigger: collapse top nav once user scrolls down on list-like pages
   const [navCollapsed, setNavCollapsed] = useState(false)
   useEffect(() => {
-    if (!isListLike) {
+    if (!isListLike || maxMD) {
       setNavCollapsed(false)
       return
     }
@@ -56,7 +59,7 @@ export default function Layout({ children }: PropsWithChildren) {
       window.removeEventListener('scroll', onScroll)
       cancelAnimationFrame(raf)
     }
-  }, [isListLike])
+  }, [isListLike, maxMD])
 
   // reset collapsed state on route change (so newly-entered page starts open)
   useEffect(() => {
@@ -191,7 +194,7 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [])
 
   return (
-    <div className='flex min-h-screen flex-col bg-black' style={{ color: 'var(--color-primary)', fontFamily: '"JetBrains Mono","SF Mono",Consolas,monospace' }}>
+    <div className='flex min-h-dvh flex-col bg-black' style={{ color: 'var(--color-primary)', fontFamily: '"JetBrains Mono","SF Mono",Consolas,monospace' }}>
       <SplashScreen />
       <CustomCursor />
       {/* decode glitch transition overlay */}
@@ -253,10 +256,10 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Top Nav */}
       {!isHome && (
-        <nav className='relative z-10 flex items-center justify-between border-b px-10' style={{ borderColor: 'var(--color-border)' }}>
+        <nav className='relative z-10 flex items-center justify-between gap-2 border-b px-4 max-md:sticky max-md:top-0 max-md:z-30 max-md:bg-black/70 max-md:backdrop-blur-md md:px-10' style={{ borderColor: 'var(--color-border)' }}>
           <Link
             href='/'
-            className={`py-6 text-base font-semibold tracking-[0.2em] text-white no-underline transition-opacity ${isListLike && navCollapsed ? 'opacity-0' : 'opacity-100'}`}
+            className={`shrink-0 py-4 text-base font-semibold tracking-[0.2em] text-white no-underline transition-opacity md:py-6 ${isListLike && navCollapsed ? 'opacity-0' : 'opacity-100'}`}
             data-cursor-label='HOME'
             onClick={e => {
               if (!isPlainClick(e)) return
@@ -267,7 +270,7 @@ export default function Layout({ children }: PropsWithChildren) {
             TENET
           </Link>
           <div
-            className='flex gap-2'
+            className='nav-scroll-mask flex min-w-0 items-center gap-2 overflow-x-auto no-scrollbar max-md:-mr-4 max-md:flex-1 max-md:pr-4'
             style={{
               animation: isListLike && navCollapsed
                 ? 'nav-items-out 0.45s cubic-bezier(0.2,0.7,0.2,1) both'
@@ -283,7 +286,7 @@ export default function Layout({ children }: PropsWithChildren) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className='group relative flex items-baseline gap-1.5 px-3 py-6 text-xs tracking-[0.1em] uppercase no-underline transition-colors'
+                  className='group relative flex items-baseline gap-1.5 px-3 py-4 text-xs tracking-[0.1em] uppercase no-underline transition-colors md:py-6'
                   style={{ color: active ? 'var(--color-brand)' : '#666' }}
                   onClick={e => {
                     if (!isPlainClick(e)) return
@@ -297,7 +300,7 @@ export default function Layout({ children }: PropsWithChildren) {
                   <span className='transition-colors group-hover:text-white' style={{ color: active ? 'var(--color-brand)' : undefined }}>
                     {item.label}
                   </span>
-                  <span className='absolute bottom-5 left-3 right-3 h-px transition-all duration-300' style={{
+                  <span className='absolute bottom-3 left-3 right-3 h-px transition-all duration-300 md:bottom-5' style={{
                     backgroundColor: 'var(--color-brand)',
                     opacity: active ? 1 : 0
                   }} />
@@ -311,7 +314,7 @@ export default function Layout({ children }: PropsWithChildren) {
       {/* TENET vertical badge — migrates to left golden ratio when scrolled on list-like pages */}
       {isListLike && (
         <div
-          className='pointer-events-none fixed left-3 z-30'
+          className='pointer-events-none fixed left-3 z-30 max-md:hidden'
           style={{
             top: '38.2vh',
             transform: 'translateY(-50%)',
@@ -358,7 +361,7 @@ export default function Layout({ children }: PropsWithChildren) {
         </main>
       ) : (
         <main
-          className='relative z-[1] mx-auto w-full max-w-[720px] flex-1 px-6 py-12'
+          className='relative z-[1] mx-auto w-full max-w-[720px] flex-1 px-4 py-10 md:px-6 md:py-12'
         >
           {children}
         </main>
@@ -366,7 +369,7 @@ export default function Layout({ children }: PropsWithChildren) {
 
       {/* Footer */}
       {!isHome && (
-        <footer className='relative z-[1] flex justify-center border-t px-10 py-6' style={{ borderColor: 'var(--color-border)' }}>
+        <footer className='relative z-[1] flex justify-center border-t px-4 py-6 md:px-10' style={{ borderColor: 'var(--color-border)' }}>
           <span className='text-[0.65rem] tracking-[0.1em]' style={{ color: '#333' }}>
             {'// '}
             {siteContent.meta.title || 'BLOG'}

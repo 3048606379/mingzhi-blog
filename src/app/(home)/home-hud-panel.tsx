@@ -267,8 +267,8 @@ export default function HomeHudPanel() {
 				</div>
 			</section>
 
-			{/* actions */}
-			<section className='flex flex-col gap-1 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
+			{/* actions — write/config are desktop-only, mobile is browse-only */}
+			<section className='flex flex-col gap-1 border-t pt-6 max-md:hidden' style={{ borderColor: 'var(--color-border)' }}>
 				<SectionHeader>ACTIONS</SectionHeader>
 				<button
 					onClick={() => navigate('/write')}

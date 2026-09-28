@@ -44,7 +44,8 @@ export default function Home() {
 			/>
 			<NavColumns />
 			<div
-				className='pointer-events-none px-6 py-12 md:absolute md:inset-y-0 md:left-0 md:w-[62%] md:overflow-y-auto [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_.cursor-pointer]:pointer-events-auto'
+				id='home-content'
+				className='pointer-events-none px-5 py-10 sm:px-6 sm:py-12 md:absolute md:inset-y-0 md:left-0 md:w-[62%] md:overflow-y-auto [&_a]:pointer-events-auto [&_button]:pointer-events-auto [&_.cursor-pointer]:pointer-events-auto'
 				style={{
 					opacity: splashDone ? undefined : 0,
 					animation: splashDone ? 'hero-enter-left 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0s both' : 'none'

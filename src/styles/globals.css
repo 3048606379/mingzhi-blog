@@ -525,3 +525,46 @@
 		transform: translate(-40px, -16px);
 	}
 }
+
+/* ===== Mobile adaptation (< 768px) ===== */
+@media (max-width: 767px) {
+	html {
+		-webkit-text-size-adjust: 100%;
+	}
+
+	/* horizontal overflow guard — real overflows are still fixed at the source */
+	html,
+	body {
+		overflow-x: clip;
+	}
+
+	/* iOS: don't auto-zoom when a small-font input gets focus */
+	input,
+	textarea,
+	select {
+		font-size: 16px;
+	}
+
+	/* top nav: scrollable links, fade the right edge as a scroll hint */
+	.nav-scroll-mask {
+		mask-image: linear-gradient(to right, #000 90%, transparent);
+		-webkit-mask-image: linear-gradient(to right, #000 90%, transparent);
+	}
+}
+
+.no-scrollbar {
+	scrollbar-width: none;
+	-ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+
+/* touch: no 300ms double-tap delay, no tap highlight */
+a,
+button,
+label,
+[role='button'] {
+	touch-action: manipulation;
+	-webkit-tap-highlight-color: transparent;
+}

@@ -40,7 +40,7 @@ export default function FloatingNav({ visible }: FloatingNavProps) {
 	return (
 		<div
 			data-cursor-no-magnetic
-			className='group pointer-events-none fixed top-1/2 right-3 z-30 -translate-y-1/2'
+			className='group pointer-events-none fixed top-1/2 right-3 z-30 -translate-y-1/2 max-md:hidden'
 			style={{
 				opacity: visible ? 1 : 0,
 				transition: 'opacity 0.35s ease'

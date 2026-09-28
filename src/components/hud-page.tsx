@@ -9,7 +9,7 @@ export function HudPageHeader({ title, subtitle }: { title: string; subtitle?: s
 				{'// '}
 				{subtitle ?? 'SECTION'}
 			</div>
-			<h1 className='text-3xl font-semibold tracking-[0.25em] text-white'>{title}</h1>
+			<h1 className='text-2xl font-semibold tracking-[0.25em] text-white md:text-3xl'>{title}</h1>
 			<div className='h-px w-full' style={{ background: 'linear-gradient(to right, var(--color-brand), transparent)' }} />
 		</header>
 	)
@@ -48,7 +48,7 @@ export function HudRow({ index, title, desc, meta, href, external, delay = 0 }: 
 				</span>
 			)}
 			<span
-				className='shrink-0 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100'
+				className='shrink-0 opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100 max-md:hidden'
 				style={{ color: 'var(--color-brand)' }}
 			>
 				-&gt;

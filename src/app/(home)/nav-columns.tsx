@@ -63,7 +63,7 @@ export default function NavColumns() {
 
 	return (
 		<div
-			className='flex h-screen w-full justify-end border-r md:absolute md:inset-y-0 md:left-[62%] md:h-full md:w-[38%] md:[transform:skewX(-15deg)_translateX(-13.4vh)] md:[transform-origin:right_center]'
+			className='relative flex h-[100dvh] w-full justify-end border-r md:absolute md:inset-y-0 md:left-[62%] md:h-full md:w-[38%] md:[transform:skewX(-15deg)_translateX(-13.4vh)] md:[transform-origin:right_center]'
 			style={{ borderColor: 'var(--color-border)' }}
 			data-cursor-no-magnetic
 		>
@@ -71,7 +71,7 @@ export default function NavColumns() {
 				<Link
 					key={column.href}
 					href={column.href}
-					className='group relative flex w-16 items-center justify-center border-l no-underline transition-colors duration-300 sm:w-24 md:w-auto md:flex-1'
+					className='group relative flex w-16 items-center justify-center border-l no-underline transition-colors duration-300 active:bg-white/5 max-[359px]:w-14 sm:w-24 md:w-auto md:flex-1'
 					style={{
 						borderColor: 'var(--color-border)',
 						opacity: splashDone ? undefined : 0,
@@ -131,13 +131,16 @@ export default function NavColumns() {
 					</Link>
 				))}
 
-			{/* scroll hint (mobile only) */}
-			<div
-				className='pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce text-[9px] tracking-[0.4em] md:hidden'
-				style={{ color: '#444' }}
+			{/* scroll hint (mobile only) — tap to jump to content */}
+			<button
+				type='button'
+				onClick={() => document.getElementById('home-content')?.scrollIntoView({ behavior: 'smooth' })}
+				aria-label='滚动到内容'
+				className='absolute bottom-6 left-1/2 -translate-x-1/2 animate-bounce text-[9px] tracking-[0.4em] md:hidden'
+				style={{ color: '#444', background: 'transparent' }}
 			>
 				SCROLL ↓
-			</div>
+			</button>
 		</div>
 	)
 }
