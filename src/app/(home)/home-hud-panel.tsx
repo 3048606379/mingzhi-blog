@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
 import dayjs from 'dayjs'
@@ -122,12 +122,75 @@ function socialHref(item: SocialItem) {
 	return `https://${item.value}`
 }
 
+/* Scroll reveal thresholds (viewport height ratios): reveal a section once its
+   top crosses 80% while scrolling down, reverse it once the top falls back
+   past 85% while scrolling up. The 5% band is hysteresis against flicker. */
+const REVEAL_ENTER = 0.8
+const REVEAL_EXIT = 0.85
+
+/**
+ * Scroll-driven reveal for the intro sections: flies in from the top-right
+ * (reusing the nav columns' trajectory) as each section scrolls into view,
+ * and plays in reverse when the visitor scrolls back up. Geometry-based, so
+ * it works both for window scrolling (mobile) and the inner panel scroll
+ * (desktop) — the capture-phase listener sees both.
+ */
+function useScrollRevealGroup(rootRef: React.RefObject<HTMLDivElement | null>) {
+	useEffect(() => {
+		const root = rootRef.current
+		if (!root) return
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+		const shownMap = new Map<HTMLElement, boolean>()
+
+		const apply = (el: HTMLElement, shown: boolean, animate: boolean) => {
+			shownMap.set(el, shown)
+			el.dataset.reveal = shown ? 'shown' : 'hidden'
+			el.style.transitionDelay = animate && shown ? `${el.dataset.revealDelay ?? '0'}ms` : '0ms'
+		}
+
+		let raf = 0
+		const update = () => {
+			cancelAnimationFrame(raf)
+			raf = requestAnimationFrame(() => {
+				const vh = window.innerHeight
+				root.querySelectorAll<HTMLElement>('[data-reveal-item]').forEach(el => {
+					const top = el.getBoundingClientRect().top
+					const known = shownMap.get(el)
+					if (known === undefined) {
+						// first sighting: sections already on screen stay visible
+						apply(el, top < vh, false)
+					} else if (known && top >= vh * REVEAL_EXIT) {
+						apply(el, false, true)
+					} else if (!known && top <= vh * REVEAL_ENTER) {
+						apply(el, true, true)
+					}
+				})
+			})
+		}
+
+		update()
+		document.addEventListener('scroll', update, { capture: true, passive: true })
+		window.addEventListener('resize', update)
+		const mo = new MutationObserver(update)
+		mo.observe(root, { childList: true, subtree: true })
+		return () => {
+			cancelAnimationFrame(raf)
+			document.removeEventListener('scroll', update, { capture: true })
+			window.removeEventListener('resize', update)
+			mo.disconnect()
+		}
+	}, [rootRef])
+}
+
 export default function HomeHudPanel() {
 	const navigate = useTransitionNavigate()
 	const clock = useClock()
 	const greeting = useGreeting()
 	const { siteContent } = useConfigStore()
 	const { blog, loading } = useLatestBlog()
+	const panelRef = useRef<HTMLDivElement>(null)
+	useScrollRevealGroup(panelRef)
 
 	const username = siteContent.meta.username || 'MINGZHI'
 	const telemetry = useTelemetry()
@@ -144,9 +207,9 @@ export default function HomeHudPanel() {
 	const artUrl = currentArt?.url || '/images/art/cat.png'
 
 	return (
-		<div className='relative flex flex-col gap-8 py-2'>
+		<div ref={panelRef} className='relative flex flex-col gap-8 py-2'>
 			{/* status row */}
-			<div className='flex items-center justify-between text-[9px] tracking-[0.3em]' style={{ color: '#555' }}>
+			<div data-reveal-item data-reveal-delay='0' className='flex items-center justify-between text-[9px] tracking-[0.3em]' style={{ color: '#555' }}>
 				<span>STATUS MONITOR</span>
 				<span className='flex items-baseline gap-4'>
 					<span style={{ color: 'var(--color-brand)' }}>
@@ -158,7 +221,7 @@ export default function HomeHudPanel() {
 			</div>
 
 			{/* identity */}
-			<section className='flex items-center gap-6'>
+			<section data-reveal-item data-reveal-delay='80' className='flex items-center gap-6'>
 				<Link
 					href='/live2d'
 					className='relative shrink-0 p-2'
@@ -190,7 +253,7 @@ export default function HomeHudPanel() {
 
 			{/* social links */}
 			{socials.length > 0 && (
-				<section className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
+				<section data-reveal-item data-reveal-delay='160' className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
 					<SectionHeader>SOCIAL_LINKS</SectionHeader>
 					<div className='flex flex-col'>
 						{socials.map((item, i) => (
@@ -217,7 +280,7 @@ export default function HomeHudPanel() {
 			)}
 
 			{/* latest post */}
-			<section className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
+			<section data-reveal-item data-reveal-delay='240' className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
 				<SectionHeader>LATEST_POST</SectionHeader>
 				{loading ? (
 					<div className='text-xs' style={{ color: '#555' }}>
@@ -256,7 +319,7 @@ export default function HomeHudPanel() {
 			</section>
 
 			{/* art / pictures */}
-			<section className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
+			<section data-reveal-item data-reveal-delay='320' className='flex flex-col gap-3 border-t pt-6' style={{ borderColor: 'var(--color-border)' }}>
 				<SectionHeader>DATA-Ø0{dataId} // PICTURES</SectionHeader>
 				<div className='relative cursor-pointer p-2' onClick={() => navigate('/pictures')}>
 					<Corner position='tl' />
@@ -268,7 +331,7 @@ export default function HomeHudPanel() {
 			</section>
 
 			{/* actions — write/config are desktop-only, mobile is browse-only */}
-			<section className='flex flex-col gap-1 border-t pt-6 max-md:hidden' style={{ borderColor: 'var(--color-border)' }}>
+			<section data-reveal-item data-reveal-delay='320' className='flex flex-col gap-1 border-t pt-6 max-md:hidden' style={{ borderColor: 'var(--color-border)' }}>
 				<SectionHeader>ACTIONS</SectionHeader>
 				<button
 					onClick={() => navigate('/write')}
