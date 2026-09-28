@@ -50,25 +50,28 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 		<motion.div
 			initial={{ opacity: 0, scale: 0.6 }}
 			{...(maxSM ? { animate: { opacity: 1, scale: 1 } } : { whileInView: { opacity: 1, scale: 1 } })}
-			className='card relative block overflow-hidden'>
+			className='relative block overflow-hidden border bg-black/40'
+			style={{ borderColor: 'var(--color-border)', transition: 'border-color 0.3s' }}
+			onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-brand)')}
+			onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}>
 			{isEditMode && (
 				<div className='absolute top-3 right-3 z-10 flex gap-2'>
 					{isEditing ? (
 						<>
-							<button onClick={handleCancel} className='rounded-lg px-2 py-1.5 text-xs text-gray-400 transition-colors hover:text-gray-600'>
-								取消
+							<button onClick={handleCancel} className='px-2 py-1.5 text-xs tracking-[0.15em] text-[#888] transition-colors hover:text-white'>
+								&gt; 取消
 							</button>
-							<button onClick={() => setIsEditing(false)} className='rounded-lg px-2 py-1.5 text-xs text-blue-400 transition-colors hover:text-blue-600'>
-								完成
+							<button onClick={() => setIsEditing(false)} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: 'var(--color-brand)' }}>
+								&gt; 完成
 							</button>
 						</>
 					) : (
 						<>
-							<button onClick={() => setIsEditing(true)} className='rounded-lg px-2 py-1.5 text-xs text-blue-400 transition-colors hover:text-blue-600'>
-								编辑
+							<button onClick={() => setIsEditing(true)} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: 'var(--color-brand)' }}>
+								&gt; 编辑
 							</button>
-							<button onClick={onDelete} className='rounded-lg px-2 py-1.5 text-xs text-red-400 transition-colors hover:text-red-600'>
-								删除
+							<button onClick={onDelete} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: '#f87171' }}>
+								&gt; 删除
 							</button>
 						</>
 					)}
@@ -81,11 +84,12 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 						<img
 							src={localBlogger.avatar}
 							alt={localBlogger.name}
-							className={cn('h-16 w-16 rounded-full object-cover', canEdit && 'cursor-pointer')}
+							className={cn('h-16 w-16 border object-cover', canEdit && 'cursor-pointer')}
+							style={{ borderColor: 'var(--color-border)' }}
 							onClick={() => canEdit && setShowAvatarDialog(true)}
 						/>
 						{canEdit && (
-							<div className='ev pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'>
+							<div className='ev pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'>
 								<span className='text-xs text-white'>更换</span>
 							</div>
 						)}
@@ -103,7 +107,8 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 								contentEditable
 								suppressContentEditableWarning
 								onBlur={e => handleFieldChange('url', e.currentTarget.textContent || '')}
-								className='text-secondary mt-1 block max-w-[200px] cursor-text truncate text-xs focus:outline-none'>
+								className='mt-1 block max-w-[200px] cursor-text truncate text-xs focus:outline-none'
+								style={{ color: '#666' }}>
 								{localBlogger.url}
 							</div>
 						) : (
@@ -111,7 +116,10 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 								href={localBlogger.url}
 								target='_blank'
 								rel='noopener noreferrer'
-								className='text-secondary hover:text-brand mt-1 block max-w-[200px] truncate text-xs hover:underline'>
+								className='mt-1 block max-w-[200px] truncate text-xs hover:underline'
+								style={{ color: '#666' }}
+								onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-brand)')}
+								onMouseLeave={e => (e.currentTarget.style.color = '#666')}>
 								{localBlogger.url}
 							</a>
 						)}
@@ -131,8 +139,10 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 								key={status}
 								type='button'
 								onClick={() => handleFieldChange('status', status)}
-								className={`rounded-full px-3 py-1 text-xs transition-colors ${
-									(localBlogger.status ?? 'recent') === status ? 'bg-brand text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+								className={`border px-3 py-1 text-xs tracking-[0.15em] transition-colors ${
+									(localBlogger.status ?? 'recent') === status
+										? 'border-[var(--color-brand)] text-[var(--color-brand)]'
+										: 'border-[var(--color-border)] text-[#888] hover:border-[var(--color-brand)] hover:text-white'
 								}`}>
 								{status === 'recent' ? '近期更新' : '长期失联'}
 							</button>
@@ -151,10 +161,11 @@ export function BloggerCard({ blogger, isEditMode = false, onUpdate, onDelete }:
 						}
 					}}
 					className={cn(
-						'mt-3 text-sm leading-relaxed text-gray-600 transition-all duration-300 focus:outline-none',
+						'mt-3 text-sm leading-relaxed transition-all duration-300 focus:outline-none',
 						canEdit ? 'cursor-text' : 'cursor-pointer',
 						!canEdit && (expanded ? 'line-clamp-none' : 'line-clamp-3')
-					)}>
+					)}
+					style={{ color: '#999' }}>
 					{localBlogger.description}
 				</p>
 			</div>

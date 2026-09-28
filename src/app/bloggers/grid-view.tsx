@@ -40,24 +40,25 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 			<div className='mb-8 space-y-4'>
 				<input
 					type='text'
-					placeholder='搜索博主...'
+					placeholder='> 搜索博主...'
 					value={searchTerm}
 					onChange={e => setSearchTerm(e.target.value)}
-					className='focus:ring-brand mx-auto block w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:outline-none'
+					className='mx-auto block w-full max-w-md border border-[var(--color-border)] bg-transparent px-4 py-2 text-xs tracking-[0.1em] outline-none transition-colors placeholder:text-gray-600 hover:border-[var(--color-brand)] focus:border-[var(--color-brand)]'
+					style={{ color: '#bbb' }}
 				/>
 
 				<div className='flex flex-wrap justify-center gap-2'>
 					<button
 						onClick={() => setSelectedCategory('recent')}
-						className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-							selectedCategory === 'recent' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+						className={`border px-4 py-1.5 text-xs tracking-[0.15em] transition-colors ${
+							selectedCategory === 'recent' ? 'border-[var(--color-brand)] text-[var(--color-brand)]' : 'border-[var(--color-border)] text-[#888] hover:border-[var(--color-brand)] hover:text-white'
 						}`}>
 						近期更新
 					</button>
 					<button
 						onClick={() => setSelectedCategory('disconnected')}
-						className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-							selectedCategory === 'disconnected' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+						className={`border px-4 py-1.5 text-xs tracking-[0.15em] transition-colors ${
+							selectedCategory === 'disconnected' ? 'border-[var(--color-brand)] text-[var(--color-brand)]' : 'border-[var(--color-border)] text-[#888] hover:border-[var(--color-brand)] hover:text-white'
 						}`}>
 						长期失联
 					</button>
@@ -71,8 +72,8 @@ export default function GridView({ bloggers, isEditMode = false, onUpdate, onDel
 			</div>
 
 			{filteredBloggers.length === 0 && (
-				<div className='mt-12 text-center text-gray-500'>
-					<p>没有找到相关博主</p>
+				<div className='mt-12 text-center text-xs tracking-[0.2em]' style={{ color: '#555' }}>
+					&gt; 没有找到相关博主
 				</div>
 			)}
 		</div>

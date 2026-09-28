@@ -17,14 +17,14 @@
 }
 
 @layer base {
-  html {
-    @apply text-primary bg-bg h-full leading-tight overflow-x-hidden;
-    scroll-behavior: smooth;
-  }
+	html {
+		@apply text-primary bg-bg h-full overflow-x-hidden leading-tight;
+		scroll-behavior: smooth;
+	}
 
-  body {
-    @apply h-full bg-none overflow-x-hidden;
-  }
+	body {
+		@apply h-full overflow-x-hidden bg-none;
+	}
 	* {
 		@apply border-border;
 	}
@@ -192,6 +192,23 @@
 	input[type='datetime-local']::-webkit-calendar-picker-indicator {
 		cursor: none !important;
 	}
+}
+
+/* Custom cursor: keep the hovered row's own effects in lockstep with the pointer.
+   滚动时浏览器不会重新计算 :hover（鼠标没动），所以行内的箭头 / 标题高亮必须由
+   指针组件贴上的 [data-cursor-hover] 来驱动，否则滚动后仍停在上一次 mouseover 的行。
+   与 HudRow 的 group-hover 组合一一对应，且不做超出 :hover 的高亮。 */
+[data-cursor-hover] .group-hover\:translate-x-1 {
+	translate: 0.25rem 0 !important;
+}
+[data-cursor-hover] .group-hover\:opacity-100 {
+	opacity: 1 !important;
+}
+[data-cursor-hover] .group-hover\:text-white {
+	color: #fff !important;
+}
+[data-cursor-hover] .group-hover\:text-brand {
+	color: var(--color-brand) !important;
 }
 
 /* Splash screen */
@@ -417,15 +434,32 @@
 .hud-dialog input[type='number']::-webkit-outer-spin-button,
 .hud-dialog input[type='number']::-webkit-inner-spin-button,
 .hud-skin input[type='number']::-webkit-outer-spin-button,
-.hud-skin input[type='number']::-webkit-inner-spin-button {
+.hud-skin input[type='number']::-webkit-inner-spin-button,
+.projects-create-dialog input[type='number']::-webkit-outer-spin-button,
+.projects-create-dialog input[type='number']::-webkit-inner-spin-button,
+.image-picker-body input[type='number']::-webkit-outer-spin-button,
+.image-picker-body input[type='number']::-webkit-inner-spin-button {
 	-webkit-appearance: none;
 	margin: 0;
 }
 
 .hud-dialog input[type='number'],
-.hud-skin input[type='number'] {
+.hud-skin input[type='number'],
+.projects-create-dialog input[type='number'],
+.image-picker-body input[type='number'] {
 	-moz-appearance: textfield;
 	appearance: textfield;
+}
+
+/* 选图弹窗内容壳：自带内边距，绕开 .hud-dialog .card 的 !important 挤压 */
+.image-picker-body {
+	padding: 2rem;
+}
+
+@media (max-width: 640px) {
+	.image-picker-body {
+		padding: 1.25rem;
+	}
 }
 
 /* Home hero entrance (after splash) */

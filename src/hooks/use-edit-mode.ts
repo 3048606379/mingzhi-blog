@@ -8,14 +8,14 @@ export function useEditMode(key = '.') {
 
 	useEffect(() => {
 		const handler = (e: KeyboardEvent) => {
-			if (!isEditMode && (e.ctrlKey || e.metaKey) && e.key === key) {
+			if ((e.ctrlKey || e.metaKey) && e.key === key) {
 				e.preventDefault()
-				setIsEditMode(true)
+				setIsEditMode(prev => !prev)
 			}
 		}
 		window.addEventListener('keydown', handler)
 		return () => window.removeEventListener('keydown', handler)
-	}, [isEditMode, key])
+	}, [key])
 
 	useEffect(() => {
 		if (!isEditMode) {

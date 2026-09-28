@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { HudPageHeader, HudRow } from '@/components/hud-page'
 import { ProjectCard, type Project } from './components/project-card'
 import type { ImageItem } from './components/image-upload-dialog'
+import CreateDialog from './components/create-dialog'
 import { pushProjects } from './services/push-projects'
 import { useEditMode } from '@/hooks/use-edit-mode'
 import { toast } from 'sonner'
@@ -15,6 +16,7 @@ export default function ProjectsPage() {
 	const [original, setOriginal] = useState<Project[]>([])
 	const [imageItems, setImageItems] = useState<Map<string, ImageItem>>(new Map())
 	const [saving, setSaving] = useState(false)
+	const [createOpen, setCreateOpen] = useState(false)
 	const { isEditMode, editLabel, setIsEditMode } = useEditMode()
 
 	useEffect(() => {
@@ -77,14 +79,21 @@ export default function ProjectsPage() {
 							</span>
 							<button
 								className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`}
-								style={{ borderColor: 'var(--color-border)', color: '#888', animation: 'hud-row-in 0.3s ease 0.1s both' }}
+								style={{ borderColor: 'var(--color-border)', color: '#888', animation: 'hud-row-in 0.3s ease both' }}
+								onClick={() => setCreateOpen(true)}
+								disabled={saving}>
+								&gt; 添加
+							</button>
+							<button
+								className={`${btnBase} hover:border-[var(--color-brand)] hover:text-white`}
+								style={{ borderColor: 'var(--color-border)', color: '#888', animation: 'hud-row-in 0.3s ease 0.08s both' }}
 								onClick={handleCancel}
 								disabled={saving}>
 								&gt; 取消
 							</button>
 							<button
 								className={`${btnBase} hover:bg-[rgba(167,139,250,0.1)]`}
-								style={{ borderColor: 'var(--color-brand)', color: 'var(--color-brand)', animation: 'hud-row-in 0.3s ease 0.18s both' }}
+								style={{ borderColor: 'var(--color-brand)', color: 'var(--color-brand)', animation: 'hud-row-in 0.3s ease 0.16s both' }}
 								onClick={handleSave}
 								disabled={saving}>
 								&gt; {saving ? '保存中...' : '保存'}
@@ -127,6 +136,14 @@ export default function ProjectsPage() {
 						</div>
 					)}
 				</div>
+			)}
+
+			{createOpen && (
+				<CreateDialog
+					project={null}
+					onClose={() => setCreateOpen(false)}
+					onSave={project => setProjects(prev => [...prev, project])}
+				/>
 			)}
 		</>
 	)

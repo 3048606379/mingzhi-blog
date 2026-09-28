@@ -29,17 +29,18 @@ export default function GridView({ shares, isEditMode = false, onUpdate, onDelet
 			<div className='mb-8 space-y-4'>
 				<input
 					type='text'
-					placeholder='搜索资源...'
+					placeholder='> 搜索资源...'
 					value={searchTerm}
 					onChange={e => setSearchTerm(e.target.value)}
-					className='focus:ring-brand mx-auto block w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 focus:ring-2 focus:outline-none'
+					className='mx-auto block w-full max-w-md border border-[var(--color-border)] bg-transparent px-4 py-2 text-xs tracking-[0.1em] outline-none transition-colors placeholder:text-gray-600 hover:border-[var(--color-brand)] focus:border-[var(--color-brand)]'
+					style={{ color: '#bbb' }}
 				/>
 
 				<div className='flex flex-wrap justify-center gap-2'>
 					<button
 						onClick={() => setSelectedTag('all')}
-						className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-							selectedTag === 'all' ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+						className={`border px-4 py-1.5 text-xs tracking-[0.15em] transition-colors ${
+							selectedTag === 'all' ? 'border-[var(--color-brand)] text-[var(--color-brand)]' : 'border-[var(--color-border)] text-[#888] hover:border-[var(--color-brand)] hover:text-white'
 						}`}>
 						全部
 					</button>
@@ -47,8 +48,8 @@ export default function GridView({ shares, isEditMode = false, onUpdate, onDelet
 						<button
 							key={tag}
 							onClick={() => setSelectedTag(tag)}
-							className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-								selectedTag === tag ? 'bg-brand text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+							className={`border px-4 py-1.5 text-xs tracking-[0.15em] transition-colors ${
+								selectedTag === tag ? 'border-[var(--color-brand)] text-[var(--color-brand)]' : 'border-[var(--color-border)] text-[#888] hover:border-[var(--color-brand)] hover:text-white'
 							}`}>
 							{tag}
 						</button>
@@ -63,8 +64,8 @@ export default function GridView({ shares, isEditMode = false, onUpdate, onDelet
 			</div>
 
 			{filteredShares.length === 0 && (
-				<div className='mt-12 text-center text-gray-500'>
-					<p>没有找到相关资源</p>
+				<div className='mt-12 text-center text-xs tracking-[0.2em]' style={{ color: '#555' }}>
+					&gt; 没有找到相关资源
 				</div>
 			)}
 		</div>

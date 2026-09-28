@@ -46,30 +46,24 @@ export default function BlogPage() {
 			) : (
 				<div className='flex flex-col'>
 					{sorted.map((blog, i) => (
-						<HudRow
-							key={blog.slug}
-							index={String(i + 1).padStart(2, '0')}
-							title={blog.title || blog.slug}
-							desc={blog.summary}
-							meta={
-								isEditMode ? (
-									<button
-										onClick={e => {
-											e.preventDefault()
-											handleDelete(blog.slug)
-										}}
-										className='px-1.5 text-xs transition-colors hover:scale-110'
-										style={{ color: '#f87171', animation: 'hud-row-in 0.3s ease both' }}
-										title='删除这篇博客'>
-										×
-									</button>
-								) : (
-									dayjs(blog.date).format('YYYY.MM.DD')
-								)
-							}
-							delay={i * 60}
-							href={`/blog/${blog.slug}`}
-						/>
+						<div key={blog.slug} className='relative'>
+							<HudRow
+								index={String(i + 1).padStart(2, '0')}
+								title={blog.title || blog.slug}
+								desc={blog.summary}
+								meta={dayjs(blog.date).format('YYYY.MM.DD')}
+								delay={i * 60}
+								href={`/blog/${blog.slug}`}
+							/>
+							{isEditMode && (
+								<button
+									onClick={() => handleDelete(blog.slug)}
+									className='absolute top-1/2 -right-7 z-10 -translate-y-1/2 px-1 transition-transform hover:scale-110'
+									style={{ color: '#f87171', fontSize: 21, animation: 'hud-row-in 0.3s ease both' }}>
+									×
+								</button>
+							)}
+						</div>
 					))}
 				</div>
 			)}

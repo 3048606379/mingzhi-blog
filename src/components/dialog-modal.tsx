@@ -14,9 +14,21 @@ interface DialogModalProps {
 	disableCloseOnOverlay?: boolean
 	lockScroll?: boolean
 	closeOnEsc?: boolean
+	/** 关掉遮罩的背景模糊。嵌套弹窗里建议关闭：它会把上一层的亮色边框糊成光晕 */
+	blurBackdrop?: boolean
 }
 
-export function DialogModal({ open, onClose, children, className, disableCloseOnOverlay = false, lockScroll = true, closeOnEsc = true }: DialogModalProps) {
+export function DialogModal({
+	open,
+	onClose,
+	children,
+	className,
+	overlayClassName,
+	disableCloseOnOverlay = false,
+	lockScroll = true,
+	closeOnEsc = true,
+	blurBackdrop = true
+}: DialogModalProps) {
 	const [mounted, setMounted] = useState(false)
 
 	useEffect(() => {
@@ -55,7 +67,7 @@ export function DialogModal({ open, onClose, children, className, disableCloseOn
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
 					transition={{ duration: 0.2 }}
-					className={'fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm'}
+					className={cn('fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4', blurBackdrop && 'backdrop-blur-sm', overlayClassName)}
 					data-dialog-open
 					onClick={disableCloseOnOverlay ? undefined : onClose}>
 					<motion.div

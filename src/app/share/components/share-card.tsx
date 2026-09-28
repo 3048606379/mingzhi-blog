@@ -66,25 +66,28 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 		<motion.div
 			initial={{ opacity: 0, scale: 0.6 }}
 			{...(maxSM ? { animate: { opacity: 1, scale: 1 } } : { whileInView: { opacity: 1, scale: 1 } })}
-			className='card relative block overflow-hidden'>
+			className='relative block overflow-hidden border bg-black/40'
+			style={{ borderColor: 'var(--color-border)', transition: 'border-color 0.3s' }}
+			onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--color-brand)')}
+			onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--color-border)')}>
 			{isEditMode && (
 				<div className='absolute top-3 right-3 z-10 flex gap-2'>
 					{isEditing ? (
 						<>
-							<button onClick={handleCancel} className='rounded-lg px-2 py-1.5 text-xs text-gray-400 transition-colors hover:text-gray-600'>
-								取消
+							<button onClick={handleCancel} className='px-2 py-1.5 text-xs tracking-[0.15em] text-[#888] transition-colors hover:text-white'>
+								&gt; 取消
 							</button>
-							<button onClick={() => setIsEditing(false)} className='rounded-lg px-2 py-1.5 text-xs text-blue-400 transition-colors hover:text-blue-600'>
-								完成
+							<button onClick={() => setIsEditing(false)} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: 'var(--color-brand)' }}>
+								&gt; 完成
 							</button>
 						</>
 					) : (
 						<>
-							<button onClick={() => setIsEditing(true)} className='rounded-lg px-2 py-1.5 text-xs text-blue-400 transition-colors hover:text-blue-600'>
-								编辑
+							<button onClick={() => setIsEditing(true)} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: 'var(--color-brand)' }}>
+								&gt; 编辑
 							</button>
-							<button onClick={onDelete} className='rounded-lg px-2 py-1.5 text-xs text-red-400 transition-colors hover:text-red-600'>
-								删除
+							<button onClick={onDelete} className='px-2 py-1.5 text-xs tracking-[0.15em] transition-colors hover:opacity-80' style={{ color: '#f87171' }}>
+								&gt; 删除
 							</button>
 						</>
 					)}
@@ -97,11 +100,12 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 						<img
 							src={localShare.logo}
 							alt={localShare.name}
-							className={cn('h-16 w-16 rounded-xl object-cover', canEdit && 'cursor-pointer')}
+							className={cn('h-16 w-16 border object-cover', canEdit && 'cursor-pointer')}
+							style={{ borderColor: 'var(--color-border)' }}
 							onClick={() => canEdit && setShowLogoDialog(true)}
 						/>
 						{canEdit && (
-							<div className='ev pointer-events-none absolute inset-0 flex items-center justify-center rounded-xl bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'>
+							<div className='ev pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100'>
 								<span className='text-xs text-white'>更换</span>
 							</div>
 						)}
@@ -119,7 +123,8 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 								contentEditable
 								suppressContentEditableWarning
 								onBlur={e => handleFieldChange('url', e.currentTarget.textContent || '')}
-								className='text-secondary mt-1 block max-w-[200px] cursor-text truncate text-xs focus:outline-none'>
+								className='mt-1 block max-w-[200px] cursor-text truncate text-xs focus:outline-none'
+								style={{ color: '#666' }}>
 								{localShare.url}
 							</div>
 						) : (
@@ -127,7 +132,10 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 								href={localShare.url}
 								target='_blank'
 								rel='noopener noreferrer'
-								className='text-secondary hover:text-brand mt-1 block max-w-[200px] truncate text-xs hover:underline'>
+								className='mt-1 block max-w-[200px] truncate text-xs hover:underline'
+								style={{ color: '#666' }}
+								onMouseEnter={e => (e.currentTarget.style.color = 'var(--color-brand)')}
+								onMouseLeave={e => (e.currentTarget.style.color = '#666')}>
 								{localShare.url}
 							</a>
 						)}
@@ -146,12 +154,15 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 							type='text'
 							value={localShare.tags.join(', ')}
 							onChange={e => handleTagsChange(e.target.value)}
-							placeholder='标签，用逗号分隔'
-							className='w-full rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs focus:outline-none'
+							placeholder='> 标签，用逗号分隔'
+							className='w-full border border-[var(--color-border)] bg-transparent px-2 py-1 text-xs outline-none transition-colors placeholder:text-gray-600 hover:border-[var(--color-brand)] focus:border-[var(--color-brand)]'
 						/>
 					) : (
 						localShare.tags.map(tag => (
-							<span key={tag} className='bg-secondary/10 rounded-full px-2.5 py-0.5 text-xs'>
+							<span
+								key={tag}
+								className='px-2 py-0.5 text-[10px] tracking-[0.15em]'
+								style={{ color: 'var(--color-brand)', border: '1px solid var(--color-border)', backgroundColor: 'rgba(167,139,250,0.06)' }}>
 								{tag}
 							</span>
 						))
@@ -169,10 +180,11 @@ export function ShareCard({ share, isEditMode = false, onUpdate, onDelete }: Sha
 						}
 					}}
 					className={cn(
-						'mt-3 text-sm leading-relaxed text-gray-600 transition-all duration-300 focus:outline-none',
+						'mt-3 text-sm leading-relaxed transition-all duration-300 focus:outline-none',
 						canEdit ? 'cursor-text' : 'cursor-pointer',
 						!canEdit && (expanded ? 'line-clamp-none' : 'line-clamp-3')
-					)}>
+					)}
+					style={{ color: '#999' }}>
 					{localShare.description}
 				</p>
 			</div>

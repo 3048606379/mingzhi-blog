@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 export function HudPageHeader({ title, subtitle }: { title: string; subtitle?: string }) {
 	return (
-		<header className='mb-10 flex flex-col gap-3' style={{ animation: 'hud-row-in 0.4s ease both' }}>
+		<header className='mb-10 flex flex-1 flex-col gap-3' style={{ animation: 'hud-row-in 0.4s ease both' }}>
 			<div className='text-[9px] tracking-[0.35em]' style={{ color: '#444' }}>
 				{'// '}
 				{subtitle ?? 'SECTION'}
