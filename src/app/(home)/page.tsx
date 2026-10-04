@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import NavColumns from '@/app/(home)/nav-columns'
 import HomeHudPanel from '@/app/(home)/home-hud-panel'
+import ScrollCue from '@/app/(home)/scroll-cue'
 import { useSplashStore } from '@/hooks/use-splash'
 
 function PointerCoords() {
@@ -55,6 +56,7 @@ export default function Home() {
 					<HomeHudPanel />
 				</div>
 			</div>
+			<ScrollCue />
 			<PointerCoords />
 		</div>
 	)

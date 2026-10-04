@@ -343,6 +343,37 @@
 	}
 }
 
+/* Home scroll cue: a brand pulse travelling down a hairline track.
+   The pulse is h-1/3 of the track, so -100% sits above it and 300% below. */
+@keyframes scroll-cue-flow {
+	0% {
+		transform: translateY(-100%);
+		opacity: 0;
+	}
+	15% {
+		opacity: 1;
+	}
+	85% {
+		opacity: 1;
+	}
+	100% {
+		transform: translateY(300%);
+		opacity: 0;
+	}
+}
+
+@keyframes scroll-cue-arrow {
+	0%,
+	100% {
+		transform: translateY(0);
+		opacity: 0.55;
+	}
+	50% {
+		transform: translateY(3px);
+		opacity: 1;
+	}
+}
+
 /* one-shot: keep buttons non-interactive during their entry, then restore */
 @keyframes hud-buttons-enable {
 	from {
@@ -588,5 +619,8 @@ label,
 @media (prefers-reduced-motion: reduce) {
 	[data-reveal-item] {
 		transition: none;
+	}
+	[data-scroll-cue-anim] {
+		animation: none !important;
 	}
 }
