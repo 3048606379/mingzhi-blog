@@ -7,6 +7,7 @@ import SplashScreen from '@/components/splash-screen'
 import CustomCursor from '@/components/custom-cursor'
 import GridFlicker from '@/components/grid-flicker'
 import FloatingNav from '@/components/floating-nav'
+import { KeyHints } from '@/components/key-hints'
 import { useTransitionStore, useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
 import { useSize, useSizeInit } from '@/hooks/use-size'
 import Link from 'next/link'
@@ -353,6 +354,9 @@ export default function Layout({ children }: PropsWithChildren) {
       {isListLike && (
         <FloatingNav visible={showFloating} />
       )}
+
+      {/* Keyboard hints (desktop only, bottom-left) */}
+      <KeyHints />
 
       {/* Main content */}
       {isFullBleed ? (
