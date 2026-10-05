@@ -27,6 +27,7 @@ export default function Layout({ children }: PropsWithChildren) {
   const { maxMD } = useSize()
   useSizeInit()
   const isHome = pathname === '/'
+  const isShare = pathname.startsWith('/share')
   const isFullBleed = isHome || pathname.startsWith('/write') || pathname.startsWith('/pictures') || pathname.startsWith('/config') || pathname.startsWith('/blog/')
   const isListLike = !isHome && !isFullBleed
   const transitionPhase = useTransitionStore(s => s.phase)
@@ -247,13 +248,15 @@ export default function Layout({ children }: PropsWithChildren) {
         }}
       />
 
-      {/* Grid background */}
-      <div className='pointer-events-none fixed inset-0 z-0' style={{
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
-        backgroundSize: '60px 60px'
-      }} />
+      {/* Grid background — share 页不要背景网格（线框房间自己就是结构） */}
+      {!isShare && (
+        <div className='pointer-events-none fixed inset-0 z-0' style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
+          backgroundSize: '60px 60px'
+        }} />
+      )}
       {/* Grid ambient: random cells light up and fade */}
-      <GridFlicker />
+      {!isShare && <GridFlicker />}
 
       {/* Top Nav */}
       {!isHome && (
