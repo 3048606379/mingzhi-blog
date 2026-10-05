@@ -1,6 +1,6 @@
 'use client'
 
-import { type PropsWithChildren, useEffect, useRef } from 'react'
+import { type PropsWithChildren, useEffect, useId, useRef } from 'react'
 
 /**
  * wodniack.dev 同款「线框房间」— 纯 2D 数学，没有 WebGL / three.js。
@@ -32,13 +32,16 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 	const innerRef = useRef<HTMLDivElement>(null)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const pathRef = useRef<SVGPathElement>(null)
+	const clipRectRef = useRef<SVGRectElement>(null)
+	const clipId = `share-room-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
 	useEffect(() => {
 		const section = sectionRef.current
 		const inner = innerRef.current
 		const svg = svgRef.current
 		const path = pathRef.current
-		if (!section || !inner || !svg || !path) return
+		const clipRect = clipRectRef.current
+		if (!section || !inner || !svg || !path || !clipRect) return
 
 		const mq = window.matchMedia('(min-width: 768px)')
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -47,6 +50,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		let range = DRIFT_DESKTOP
 		let margin = MARGIN_DESKTOP
 		let innerBase: Box = { x: 0, y: 0, w: 0, h: 0 }
+		let footerEl: HTMLElement | null = null
 		let p = 0 // 目标滚动进度
 		let sp = 0 // 平滑后的进度
 		let first = true
@@ -59,11 +63,14 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			margin = mq.matches ? MARGIN_DESKTOP : MARGIN_MOBILE
 			// offsetLeft/Top 是布局值，不受 transform 影响，可安全缓存
 			innerBase = { x: inner.offsetLeft, y: inner.offsetTop, w: inner.offsetWidth, h: inner.offsetHeight }
+			footerEl = document.querySelector('footer')
 			const vw = document.documentElement.clientWidth
 			const vh = document.documentElement.clientHeight
 			svg.setAttribute('width', String(vw))
 			svg.setAttribute('height', String(vh))
 			svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`)
+			clipRect.setAttribute('width', String(vw))
+			clipRect.setAttribute('height', String(vh))
 			kick()
 		}
 
@@ -97,8 +104,13 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				inner.style.willChange = ''
 			}
 
-			// 外层矩形：视口宽度 × section 上下外扩 margin
-			const outer: Box = { x: 0, y: sec.top - margin, w: vw, h: sec.height + margin * 2 }
+			// 外层矩形：视口宽度 × section 上下外扩 margin；底部以「铭秩」页脚的
+			// 上横线为界 —— 房间的视觉终点就在那条线上，线以下的几何全部裁掉
+			const footerTop = footerEl ? Math.min(vh, Math.max(0, footerEl.getBoundingClientRect().top)) : vh
+			const outerTop = sec.top - margin
+			const outerBottom = Math.max(outerTop + 1, Math.min(sec.top + sec.height + margin, footerTop))
+			const outer: Box = { x: 0, y: outerTop, w: vw, h: outerBottom - outerTop }
+			clipRect.setAttribute('height', String(footerTop))
 			const box: Box = { x: sec.left + innerBase.x, y: sec.top + innerBase.y + offset, w: innerBase.w, h: innerBase.h }
 
 			const ox1 = outer.x
@@ -210,7 +222,12 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				data-share-room
 				className='pointer-events-none fixed inset-0 z-0 h-full w-full'
 				style={{ stroke: 'rgba(255,255,255,0.16)', fill: 'none' }}>
-				<path ref={pathRef} />
+				<defs>
+					<clipPath id={clipId}>
+						<rect ref={clipRectRef} x='0' y='0' width='0' height='0' />
+					</clipPath>
+				</defs>
+				<path ref={pathRef} clipPath={`url(#${clipId})`} />
 			</svg>
 			<div ref={innerRef} className='relative z-10 border' style={{ borderColor: 'var(--color-border)' }}>
 				{children}
