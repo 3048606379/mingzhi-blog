@@ -79,10 +79,12 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			const vh = document.documentElement.clientHeight
 			const vw = document.documentElement.clientWidth
 
-			// 进度：整页滚动 0..1（share 是单 section 页面；wodniack 的
-			// “进入/离开视口”公式在短页面上会压得几乎不动）
-			const max = Math.max(1, document.documentElement.scrollHeight - vh)
-			p = Math.min(1, Math.max(0, window.scrollY / max))
+			// 进度：整页滚动 0..1。兼容两种布局：新版滚 window，线上旧版桌面
+			// 是 body 作为滚动容器（window.scrollY 恒为 0），两种都取一遍
+			const docEl = document.documentElement
+			const scrollTop = Math.max(window.scrollY || 0, docEl.scrollTop || 0, document.body.scrollTop || 0)
+			const scrollMax = Math.max(1, Math.max(docEl.scrollHeight, document.body.scrollHeight) - vh)
+			p = Math.min(1, Math.max(0, scrollTop / scrollMax))
 			if (first || reduced) {
 				sp = p
 				first = false
