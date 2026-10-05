@@ -50,6 +50,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		let range = DRIFT_DESKTOP
 		let margin = MARGIN_DESKTOP
 		let innerBase: Box = { x: 0, y: 0, w: 0, h: 0 }
+		let navEl: HTMLElement | null = null
 		let footerEl: HTMLElement | null = null
 		let p = 0 // 目标滚动进度
 		let sp = 0 // 平滑后的进度
@@ -64,6 +65,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			// offsetLeft/Top 是布局值，不受 transform 影响，可安全缓存
 			innerBase = { x: inner.offsetLeft, y: inner.offsetTop, w: inner.offsetWidth, h: inner.offsetHeight }
 			footerEl = document.querySelector('footer')
+			navEl = document.querySelector('nav')
 			const vw = document.documentElement.clientWidth
 			const vh = document.documentElement.clientHeight
 			svg.setAttribute('width', String(vw))
@@ -106,13 +108,16 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				inner.style.willChange = ''
 			}
 
-			// 外层矩形：视口宽度 × section 上下外扩 margin；底部以「铭秩」页脚的
-			// 上横线为界 —— 房间的视觉终点就在那条线上，线以下的几何全部裁掉
+			// 外层矩形：视口宽度 × section 上下外扩 margin；
+			// 顶部以标签栏（nav）的下横线为界、底部以「铭秩」页脚的上横线为界
+			// —— 房间就落在两条线之间，界外的几何全部裁掉
+			const navBottom = navEl ? Math.min(vh, Math.max(0, navEl.getBoundingClientRect().bottom)) : 0
 			const footerTop = footerEl ? Math.min(vh, Math.max(0, footerEl.getBoundingClientRect().top)) : vh
-			const outerTop = sec.top - margin
+			const outerTop = Math.max(sec.top - margin, navBottom)
 			const outerBottom = Math.max(outerTop + 1, Math.min(sec.top + sec.height + margin, footerTop))
 			const outer: Box = { x: 0, y: outerTop, w: vw, h: outerBottom - outerTop }
-			clipRect.setAttribute('height', String(footerTop))
+			clipRect.setAttribute('y', String(navBottom))
+			clipRect.setAttribute('height', String(Math.max(0, footerTop - navBottom)))
 			const box: Box = { x: sec.left + innerBase.x, y: sec.top + innerBase.y + offset, w: innerBase.w, h: innerBase.h }
 
 			const ox1 = outer.x
