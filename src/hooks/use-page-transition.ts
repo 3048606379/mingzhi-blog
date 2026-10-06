@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { useRouter, usePathname } from 'next/navigation'
 import type { MouseEvent } from 'react'
+import { isRoomPath } from '@/app/share/share-room'
 
 type Phase = 'idle' | 'cover' | 'reveal'
 
@@ -30,6 +31,11 @@ export function useTransitionNavigate() {
     if (href === pathname) return
     // read the freshest phase from the store to avoid any stale-closure races
     if (useTransitionStore.getState().phase !== 'idle') return
+    // 房间页之间导航：房间外壳常驻在 layout 上，只切换中间面板内容，不播转场
+    if (isRoomPath(pathname || '') && isRoomPath(href)) {
+      router.push(href)
+      return
+    }
     setLabel(`> cd ${href === '/' ? '~/' : href}`)
     setPhase('cover')
     // prefetch during the cover animation so reveal is instant

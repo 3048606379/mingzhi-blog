@@ -7,6 +7,7 @@ import SplashScreen from '@/components/splash-screen'
 import CustomCursor from '@/components/custom-cursor'
 import GridFlicker from '@/components/grid-flicker'
 import FloatingNav from '@/components/floating-nav'
+import ShareRoom, { isRoomPath } from '@/app/share/share-room'
 import { KeyHints } from '@/components/key-hints'
 import { useTransitionStore, useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
 import { useSize, useSizeInit } from '@/hooks/use-size'
@@ -27,7 +28,9 @@ export default function Layout({ children }: PropsWithChildren) {
   const { maxMD } = useSize()
   useSizeInit()
   const isHome = pathname === '/'
-  const isShare = pathname.startsWith('/share')
+  // 「伪 3D 房间」覆盖的五个导航页：这些页面用房间线框背景，不用 60px 网格，
+  // 并且共用 layout 上的常驻房间外壳
+  const isRoomPage = isRoomPath(pathname)
   const isFullBleed = isHome || pathname.startsWith('/write') || pathname.startsWith('/pictures') || pathname.startsWith('/config') || pathname.startsWith('/blog/')
   const isListLike = !isHome && !isFullBleed
   const transitionPhase = useTransitionStore(s => s.phase)
@@ -107,6 +110,22 @@ export default function Layout({ children }: PropsWithChildren) {
     }, 3000)
     return () => clearTimeout(fallback)
   }, [transitionPhase])
+
+  // 键盘导航：仅在五个房间子页面内生效，按 1-5 跳转到对应编号的页面
+  useEffect(() => {
+    if (!isRoomPage) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.repeat) return
+      const idx = ['1', '2', '3', '4', '5'].indexOf(e.key)
+      if (idx < 0 || idx >= navItems.length) return
+      const t = e.target as HTMLElement | null
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
+      e.preventDefault()
+      navigate(navItems[idx].href)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isRoomPage, navigate])
 
   // hide scrollbars during entire transition — the fixed overlay cannot paint over
   // native scrollbar tracks, and restoring during reveal makes scrollbars flash
@@ -248,15 +267,15 @@ export default function Layout({ children }: PropsWithChildren) {
         }}
       />
 
-      {/* Grid background — share 页不要背景网格（线框房间自己就是结构） */}
-      {!isShare && (
+      {/* Grid background — 房间页不要背景网格（线框房间自己就是结构） */}
+      {!isRoomPage && (
         <div className='pointer-events-none fixed inset-0 z-0' style={{
           backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)',
           backgroundSize: '60px 60px'
         }} />
       )}
       {/* Grid ambient: random cells light up and fade */}
-      {!isShare && <GridFlicker />}
+      {!isRoomPage && <GridFlicker />}
 
       {/* Top Nav */}
       {!isHome && (
@@ -370,7 +389,9 @@ export default function Layout({ children }: PropsWithChildren) {
         <main
           className='relative z-[1] mx-auto w-full max-w-[720px] flex-1 px-4 py-10 md:px-6 md:py-12'
         >
-          {children}
+          {/* 五个导航页共用常驻的「房间」外壳：它们之间导航时不重建房间，
+              只切换面板里的内容（导航也跳过转场动画） */}
+          {isRoomPage ? <ShareRoom>{children}</ShareRoom> : children}
         </main>
       )}
 

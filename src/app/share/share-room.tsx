@@ -1,6 +1,7 @@
 'use client'
 
 import { type PropsWithChildren, useEffect, useId, useRef } from 'react'
+import { useSplashStore } from '@/hooks/use-splash'
 
 /**
  * 线框房间 · 透视网格墙 —— 纯 2D 数学，没有 WebGL / three.js。
@@ -39,6 +40,31 @@ const GLOW_BLOCK_MIN = 10
 const GLOW_MIN_VISIBLE = 6
 const GLOW_MERGE_LIMIT = 12
 
+/** 出场编排：开屏结束后等 DELAY 毫秒起爆，各波次按下方的顺序与错峰依次生长 */
+const INTRO_DELAY_MS = 500
+/** 全场结束时刻（紫色光效在此之后才出现），ms */
+const INTRO_MS = 1950
+/** ① 四角棱线（墙与地/顶的交界）最先延展；其余墙面横缝随后按离视平线的距离错峰 */
+const CORNER_DUR = 600
+const SEAM_BASE = 180
+const SEAM_STAGGER = 10
+const SEAM_DUR = 520
+/** ② 墙壁竖缝：由远到近（灭点处先出、贴屏边后出）逐条生长 */
+const JOINT_BASE = 450
+const JOINT_STEP = 11
+const JOINT_DUR = 520
+/** ③ 天花板/地板横线：由近到远（贴屏边先出、灭点处后出）逐条铺开 */
+const DECK_BASE = 880
+const DECK_STEP = 11
+const DECK_DUR = 520
+
+/** 五个「伪 3D 房间」页面（房间外壳挂在 layout 上；它们之间导航不重建房间） */
+export const ROOM_PATHS = ['/blog', '/projects', '/share', '/bloggers', '/about']
+export const isRoomPath = (p: string) => ROOM_PATHS.includes(p.replace(/\/$/, ''))
+
+/** 本次会话是否已经构建过房间：只在首次进入房间页时播一次「房间构建」动画 */
+let roomBuilt = false
+
 export default function ShareRoom({ children }: PropsWithChildren) {
 	const sectionRef = useRef<HTMLElement>(null)
 	const panelRef = useRef<HTMLDivElement>(null)
@@ -50,11 +76,12 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 
 	useEffect(() => {
 		const section = sectionRef.current
+		const panel = panelRef.current
 		const svg = svgRef.current
 		const path = pathRef.current
 		const clip = clipPathRef.current
 		const glow = glowRef.current
-		if (!section || !svg || !path || !clip || !glow) return
+		if (!section || !panel || !svg || !path || !clip || !glow) return
 
 		const mq = window.matchMedia('(min-width: 768px)')
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -68,6 +95,13 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		let first = true
 		let raf = 0
 		let inView = false
+		let introStart = 0 // 出场动画起始时刻；0 = 未触发（房间收缩在灭点上）
+		let panelShown = false // 中间面板是否已出现（房间构建完成后才淡入）
+		// 本次会话是否第一次进入房间页：只有首次才播「房间构建」动画，
+		// 之后（同一会话内再次进入）直接呈现完整房间与面板
+		const playIntro = !roomBuilt
+		roomBuilt = true
+		if (!playIntro) introStart = performance.now() - INTRO_MS - 1000
 		type GlowCell = { side: number; oa: number; ob: number; k0: number; k1: number; t: number; dur: number }
 		let glowCells: GlowCell[] = []
 		let lastGlowSpawn = 0
@@ -155,20 +189,46 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			const f = 0.5 - amp * (sp * 2 - 1)
 			const camY = ROOM_H * f
 
+			// 出场编排：elapsed = 起爆后的毫秒数（reduced = 直接完成）；
+			// easy(delay, dur) = 第 delay 毫秒开始、用 dur 毫秒 ease-out 到 1
+			const now = performance.now()
+			const elapsed = reduced ? Infinity : introStart ? now - introStart : -1e9
+			const easy = (delay: number, dur: number) => {
+				const e = Math.min(1, Math.max(0, (elapsed - delay) / dur))
+				return 1 - Math.pow(1 - e, 3)
+			}
+
+			// 房间构建完成（出场编排全部结束）后，中间面板才淡入出现
+			if (!panelShown && elapsed >= INTRO_MS) {
+				panelShown = true
+				if (reduced || !playIntro) {
+					panel.style.transition = 'none'
+					panel.style.transform = 'none'
+				} else {
+					panel.style.transform = 'translateY(0)'
+				}
+				panel.style.opacity = '1'
+				panel.style.pointerEvents = ''
+			}
+
 			const segs: string[] = []
 			const seg = (ax: number, ay: number, bx: number, by: number) =>
 				segs.push(`M${ax.toFixed(1)} ${ay.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`)
 
-			// 横缝：从灭点射出的射线（等距世界高度 → 铺满整个视口高度）
+			// 横缝：从灭点射出的射线（等距世界高度 → 铺满整个视口高度）；
+			// 出场编排 ①：四角棱线（k=0 与 k=seams，左右共 4 条）最先延展，
+			// 其余横缝随后按离视平线的距离轻微错峰出现
 			for (const side of [-1, 1] as const) {
 				for (let k = 0; k <= seams; k++) {
 					const worldY = (ROOM_H * k) / seams
 					const dx = side * ROOM_W
 					const dy = camY - worldY
+					const gk =
+						k === 0 || k === seams ? easy(0, CORNER_DUR) : easy(SEAM_BASE + Math.abs(k - seams / 2) * SEAM_STAGGER, SEAM_DUR)
 					// 射线离开视口的参数 t（先撞左/右边界或上/下边界即止）
 					const tx = dx > 0 ? (vw - vpx) / dx : -vpx / dx
 					const ty = Math.abs(dy) < 1e-6 ? Infinity : dy > 0 ? (vh - vpy) / dy : -vpy / dy
-					const t = Math.min(tx, ty) + 1.5
+					const t = (Math.min(tx, ty) + 1.5) * gk
 					seg(vpx, vpy, vpx + dx * t, vpy + dy * t)
 				}
 			}
@@ -179,32 +239,54 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			const reach = vpx - PANEL_EDGE_GAP
 			const jointOffs: number[] = []
 			for (let k = 1; k <= PANEL_COUNT; k++) jointOffs.push((reach * (Math.pow(PANEL_GROWTH, k) - 1)) / denom)
+			// 出场编排 ②：竖缝由远到近（中心灭点 → 屏幕边缘）逐条"长出来"；
+			// 每条从其地板点由下至上生长到天花板，并贯穿上下层
 			for (const dir of [-1, 1] as const) {
-				for (const off of jointOffs) seg(vpx + dir * off, 0, vpx + dir * off, vh)
+				for (let i = 0; i < jointOffs.length; i++) {
+					const gj = easy(JOINT_BASE + i * JOINT_STEP, JOINT_DUR)
+					const o = jointOffs[i]
+					const x = vpx + dir * o
+					// 墙内的竖缝：下到地板棱线、上到天花板棱线
+					const yTop = vpy - (o * (ROOM_H - camY)) / ROOM_W
+					const yBot = vpy + (o * camY) / ROOM_W
+					const yEnd = yBot + (yTop - yBot) * gj
+					seg(x, yBot, x, yEnd)
+					// 上下层（天花板 / 地板）的竖线：与墙缝对齐，从棱线延伸到屏幕边
+					seg(x, yTop - yTop * gj, x, yTop)
+					seg(x, yBot, x, yBot + (vh - yBot) * gj)
+				}
 			}
 
 			// 地板：左右墙「地板棱线」（世界高 0 的横缝）在同一条竖缝深度上的
 			// 交点跨屏相连 —— 每个竖缝一条水平格线，构成地板面
-			for (const off of jointOffs) {
-				const y = vpy + (off * camY) / ROOM_W
+			// 出场编排 ③：由近到远（贴屏边先出、灭点处后出）逐条铺开，
+			// 每条从左往右"长出来"
+			for (let idx = jointOffs.length - 1; idx >= 0; idx--) {
+				const gd = easy(DECK_BASE + (jointOffs.length - 1 - idx) * DECK_STEP, DECK_DUR)
+				const o = jointOffs[idx]
+				const y = vpy + (o * camY) / ROOM_W
 				if (y > footerTop + 8) continue
-				seg(vpx - off, y, vpx + off, y)
+				const x0 = vpx - o
+				seg(x0, y, x0 + 2 * o * gd, y)
 			}
 
 			// 天花板：左右墙「天花板棱线」（世界高 ROOM_H 的横缝）在同一条
 			// 竖缝深度上的交点跨屏相连 —— 每个竖缝一条水平格线，构成天花板面
-			for (const off of jointOffs) {
-				const y = vpy - (off * (ROOM_H - camY)) / ROOM_W
+			for (let idx = jointOffs.length - 1; idx >= 0; idx--) {
+				const gd = easy(DECK_BASE + (jointOffs.length - 1 - idx) * DECK_STEP, DECK_DUR)
+				const o = jointOffs[idx]
+				const y = vpy - (o * (ROOM_H - camY)) / ROOM_W
 				if (y < navBottom - 8) continue
-				seg(vpx - off, y, vpx + off, y)
+				const x0 = vpx - o
+				seg(x0, y, x0 + 2 * o * gd, y)
 			}
 
 			path.setAttribute('d', segs.join(''))
 
 			// 紫色光效：随机点亮「墙面网格的格子」（与全站 GridFlicker 同款式）。
 			// 每帧按当前几何重算四角 —— 滚动/升降时与网格实时同步滑动
-			const now = performance.now()
-			if (inView && now - lastGlowSpawn > GLOW_SPAWN_MS) {
+			// （出场编排全部完成后才开始生成）
+			if (inView && elapsed >= INTRO_MS && now - lastGlowSpawn > GLOW_SPAWN_MS) {
 				lastGlowSpawn = now
 				const tries = Math.random() < 0.4 ? 2 : 1
 				for (let n = 0; n < tries && glowCells.length < GLOW_MAX; n++) spawnGlow(now, vpx, vpy, camY, jointOffs, navBottom, footerTop)
@@ -240,11 +322,24 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		const frame = () => {
 			raf = 0
 			draw()
-			if (inView || Math.abs(p - sp) > 0.001) raf = requestAnimationFrame(frame)
+			const introRunning = introStart > 0 && performance.now() < introStart + INTRO_MS + 80
+			if (inView || Math.abs(p - sp) > 0.001 || introRunning) raf = requestAnimationFrame(frame)
 		}
 		const kick = () => {
 			if (!raf) raf = requestAnimationFrame(frame)
 		}
+
+		// 开屏（splash）结束后启动出场动画；已经结束过（如站内导航回来）则立即安排
+		const beginIntro = () => {
+			if (!introStart) {
+				introStart = performance.now() + INTRO_DELAY_MS
+				kick()
+			}
+		}
+		if (useSplashStore.getState().done) beginIntro()
+		const unsubSplash = useSplashStore.subscribe(s => {
+			if (s.done) beginIntro()
+		})
 
 		measure()
 		draw()
@@ -266,6 +361,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		return () => {
 			cancelAnimationFrame(raf)
 			io.disconnect()
+			unsubSplash()
 			window.removeEventListener('resize', onResize)
 			mq.removeEventListener('change', onMq)
 		}
@@ -288,7 +384,16 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				</defs>
 				<path ref={pathRef} clipPath={`url(#${clipId})`} />
 			</svg>
-			<div ref={panelRef} className='relative z-10 px-6 py-8 md:px-10 md:py-12' style={{ background: 'rgba(0,0,0,0.5)' }}>
+			<div
+				ref={panelRef}
+				className='relative z-10 px-6 py-8 md:px-10 md:py-12'
+				style={{
+					background: 'rgba(0,0,0,0.8)',
+					opacity: 0,
+					transform: 'translateY(14px)',
+					transition: 'opacity 0.7s ease, transform 0.7s ease',
+					pointerEvents: 'none'
+				}}>
 				{children}
 			</div>
 		</section>

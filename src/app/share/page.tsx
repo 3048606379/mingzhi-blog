@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import sharesJson from './list.json'
 import { HudPageHeader, HudRow, HudStars } from '@/components/hud-page'
 import GridView from './grid-view'
-import ShareRoom from './share-room'
 import type { Share } from './components/share-card'
 import type { LogoItem } from './components/logo-upload-dialog'
 import { pushShares } from './services/push-shares'
@@ -68,7 +67,7 @@ export default function SharePage() {
 	}
 
 	return (
-		<ShareRoom>
+		<>
 			<div className='flex items-start justify-between gap-4 pt-4'>
 				<HudPageHeader title='SHARE' subtitle={`${shares.length} LINKS`} />
 				<div className='flex items-center gap-2 pt-1'>
@@ -117,6 +116,6 @@ export default function SharePage() {
 					))}
 				</div>
 			)}
-		</ShareRoom>
+		</>
 	)
 }
