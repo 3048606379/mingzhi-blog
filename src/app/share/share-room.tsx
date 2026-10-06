@@ -3,53 +3,64 @@
 import { type PropsWithChildren, useEffect, useId, useRef } from 'react'
 
 /**
- * wodniack.dev 同款「线框房间」— 纯 2D 数学，没有 WebGL / three.js。
+ * 线框房间 · 透视网格墙 —— 纯 2D 数学，没有 WebGL / three.js。
  *
- * 原理：一个 fixed 的 SVG 网格层，每帧用直线把「视口矩形」和「内容列矩形」
- * 的对应点连起来 —— 4 条角线 + 四面墙的等分线 + 每面 3 条二次缓动「扇线」，
- * 让平面的内容列看起来像悬在一个 3D 房间里。内容列随滚动做垂直视差漂移
- * （±R），线网每帧重投影，房间就"活"了。
- *
- * 内层矩形始终待在外层矩形内侧 R 的余量里，所以不会翻转/穿帮。
+ * 视口中心 = 灭点（vanishing point）。左右两面墙画成"墙板网格"：
+ *  - 竖缝：从屏幕中心向两侧铺开，缝距向屏幕边缘缓慢递增（近密远疏）
+ *  - 横缝：从灭点射出的浅斜线，越远越收拢
+ * 摄像机高度由滚动进度驱动、上下移动：滚动时横缝像贴着墙面滑过（竖缝
+ * 自身不动），像坐在升降机里看两面墙。内容是一块半透明面板，房间线条
+ * 从它背后透出来；上下的可见部分被标签栏/页脚横线裁住。紫色光效随机
+ * 点亮墙面网格里的格子（每帧按当前几何重算，随滚动同步滑动）。
  */
 
-const COLS_DESKTOP = 12
-const COLS_MOBILE = 8
-const ROWS = 4
-/** 内容列漂移幅度（px）：帧率足够时木有性能问题，纯字符串拼接 */
-const DRIFT_DESKTOP = 140
-const DRIFT_MOBILE = 70
-/** 外层矩形在 section 上下各外扩的余量，必须 >= DRIFT */
-const MARGIN_DESKTOP = 180
-const MARGIN_MOBILE = 110
+/** 虚拟房间半宽 / 高度（同一世界标度）：ROOM_H/ROOM_W 越大线条越陡，越小越平缓 */
+const ROOM_W = 60
+const ROOM_H = 280
+/** 每面墙的横缝数（射线共 N+1 条，含地板/天花板棱线） */
+const SEAMS_DESKTOP = 40
+const SEAMS_MOBILE = 20
+/** 摄像机升降幅度（占房间高度比例）：滚动到底时相机高度 = 房间高/2·(1∓2·AMP) */
+const CAM_AMP = 0.15
+/** 墙板竖缝：每侧道数；缝距从屏幕中心向两侧缓慢递增（近密远疏） */
+const PANEL_COUNT = 45
+const PANEL_GROWTH = 1.12
+/** 竖缝离屏幕边缘不足此距离就不铺（留出外侧余量） */
+const PANEL_EDGE_GAP = 70
 
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t
-
-type Box = { x: number; y: number; w: number; h: number }
+/** 紫色光效（与全站 GridFlicker 同款配色与节奏） */
+const GLOW_PEAK = 0.12
+const GLOW_DUR_MIN = 900
+const GLOW_DUR_MAX = 1800
+const GLOW_SPAWN_MS = 220
+const GLOW_MAX = 14
+/** 光块目标边长（px）：0 = 单个网格单元（不合并）；>0 时合并相邻格到该宽度 */
+const GLOW_BLOCK_MIN = 10
+const GLOW_MIN_VISIBLE = 6
+const GLOW_MERGE_LIMIT = 12
 
 export default function ShareRoom({ children }: PropsWithChildren) {
 	const sectionRef = useRef<HTMLElement>(null)
-	const innerRef = useRef<HTMLDivElement>(null)
+	const panelRef = useRef<HTMLDivElement>(null)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const pathRef = useRef<SVGPathElement>(null)
-	const clipRectRef = useRef<SVGRectElement>(null)
+	const clipPathRef = useRef<SVGPathElement>(null)
+	const glowRef = useRef<HTMLCanvasElement>(null)
 	const clipId = `share-room-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
 
 	useEffect(() => {
 		const section = sectionRef.current
-		const inner = innerRef.current
 		const svg = svgRef.current
 		const path = pathRef.current
-		const clipRect = clipRectRef.current
-		if (!section || !inner || !svg || !path || !clipRect) return
+		const clip = clipPathRef.current
+		const glow = glowRef.current
+		if (!section || !svg || !path || !clip || !glow) return
 
 		const mq = window.matchMedia('(min-width: 768px)')
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+		const amp = reduced ? 0 : CAM_AMP
 
-		let cols = COLS_DESKTOP
-		let range = DRIFT_DESKTOP
-		let margin = MARGIN_DESKTOP
-		let innerBase: Box = { x: 0, y: 0, w: 0, h: 0 }
+		let seams = SEAMS_DESKTOP
 		let navEl: HTMLElement | null = null
 		let footerEl: HTMLElement | null = null
 		let p = 0 // 目标滚动进度
@@ -57,13 +68,12 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		let first = true
 		let raf = 0
 		let inView = false
+		type GlowCell = { side: number; oa: number; ob: number; k0: number; k1: number; t: number; dur: number }
+		let glowCells: GlowCell[] = []
+		let lastGlowSpawn = 0
 
 		const measure = () => {
-			cols = mq.matches ? COLS_DESKTOP : COLS_MOBILE
-			range = mq.matches ? DRIFT_DESKTOP : DRIFT_MOBILE
-			margin = mq.matches ? MARGIN_DESKTOP : MARGIN_MOBILE
-			// offsetLeft/Top 是布局值，不受 transform 影响，可安全缓存
-			innerBase = { x: inner.offsetLeft, y: inner.offsetTop, w: inner.offsetWidth, h: inner.offsetHeight }
+			seams = mq.matches ? SEAMS_DESKTOP : SEAMS_MOBILE
 			footerEl = document.querySelector('footer')
 			navEl = document.querySelector('nav')
 			const vw = document.documentElement.clientWidth
@@ -71,13 +81,50 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			svg.setAttribute('width', String(vw))
 			svg.setAttribute('height', String(vh))
 			svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`)
-			clipRect.setAttribute('width', String(vw))
-			clipRect.setAttribute('height', String(vh))
+			glow.width = vw
+			glow.height = vh
 			kick()
 		}
 
+		// 生成一个光块：随机（侧、竖缝带、横缝带），合并相邻网格单元到目标尺寸；
+		// 锚定的是「偏移区间 + 横缝序号区间」，不是屏幕像素 —— 滚动时跟着网格滑
+		const spawnGlow = (now: number, vpx: number, vpy: number, camY: number, jointOffs: number[], navBottom: number, footerTop: number) => {
+			if (!jointOffs.length) return
+			// 距中心的偏移边界：0 = 中心，…，末尾 = 屏幕边
+			const ext = [0, ...jointOffs, vpx]
+			const seamAt = (x: number, k: number) => vpy + (Math.abs(x - vpx) * (camY - (ROOM_H * k) / seams)) / ROOM_W
+			for (let attempt = 0; attempt < 12; attempt++) {
+				const side = Math.random() < 0.5 ? -1 : 1
+				const i0 = Math.floor(Math.random() * (ext.length - 1))
+				// 向外合并到目标宽度
+				let i1 = i0
+				for (let m = 0; m < GLOW_MERGE_LIMIT && ext[i1 + 1] - ext[i0] < GLOW_BLOCK_MIN && i1 + 1 < ext.length - 1; m++) i1++
+				const w = ext[i1 + 1] - ext[i0]
+				if (w < GLOW_MIN_VISIBLE) continue
+				const xa = vpx + (side < 0 ? -ext[i1 + 1] : ext[i0])
+				const xb = vpx + (side < 0 ? -ext[i0] : ext[i1 + 1])
+				const xc = (xa + xb) / 2
+				// 在可见区里随机取一点，找到它所在的横缝带
+				const yStar = navBottom + 20 + Math.random() * Math.max(40, footerTop - navBottom - 40)
+				let k0 = -1
+				for (let k = 0; k < seams; k++) {
+					if (seamAt(xc, k) >= yStar && yStar >= seamAt(xc, k + 1)) {
+						k0 = k
+						break
+					}
+				}
+				if (k0 < 0) continue
+				let k1 = k0 + 1
+				// 向下合并到目标高度
+				for (let m = 0; m < GLOW_MERGE_LIMIT && k0 > 0 && seamAt(xc, k0) - seamAt(xc, k1) < GLOW_BLOCK_MIN; m++) k0--
+				const h = seamAt(xc, k0) - seamAt(xc, k1)
+				if (h < GLOW_MIN_VISIBLE) continue
+				glowCells.push({ side, oa: ext[i0], ob: ext[i1 + 1], k0, k1, t: now, dur: GLOW_DUR_MIN + Math.random() * (GLOW_DUR_MAX - GLOW_DUR_MIN) })
+				return
+			}
+		}
+
 		const draw = () => {
-			const sec = section.getBoundingClientRect()
 			const vh = document.documentElement.clientHeight
 			const vw = document.documentElement.clientWidth
 
@@ -95,92 +142,99 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				if (Math.abs(p - sp) < 0.001) sp = p
 			}
 
-			// 内层随滚动漂移（±range），像悬在房间里。
-			// transform 会成为 fixed 后代的包含块 —— 本页所有弹窗都 portal 到
-			// body，所以安全；但一旦漂移，就同步挂上 will-change。
-			const drifting = !reduced
-			const offset = drifting ? range * (sp * 2 - 1) : 0
-			if (drifting) {
-				inner.style.transform = `translate3d(0, ${offset.toFixed(2)}px, 0)`
-				inner.style.willChange = 'transform'
-			} else if (inner.style.transform) {
-				inner.style.transform = ''
-				inner.style.willChange = ''
-			}
-
-			// 外层矩形：视口宽度 × section 上下外扩 margin；
-			// 顶部以标签栏（nav）的下横线为界、底部以「铭秩」页脚的上横线为界
-			// —— 房间就落在两条线之间，界外的几何全部裁掉
+			// 裁剪区域：上 = 标签栏下横线，下 = 页脚上横线（房间只在这两条线之间）
 			const navBottom = navEl ? Math.min(vh, Math.max(0, navEl.getBoundingClientRect().bottom)) : 0
 			const footerTop = footerEl ? Math.min(vh, Math.max(0, footerEl.getBoundingClientRect().top)) : vh
-			const outerTop = Math.max(sec.top - margin, navBottom)
-			const outerBottom = Math.max(outerTop + 1, Math.min(sec.top + sec.height + margin, footerTop))
-			const outer: Box = { x: 0, y: outerTop, w: vw, h: outerBottom - outerTop }
-			clipRect.setAttribute('y', String(navBottom))
-			clipRect.setAttribute('height', String(Math.max(0, footerTop - navBottom)))
-			const box: Box = { x: sec.left + innerBase.x, y: sec.top + innerBase.y + offset, w: innerBase.w, h: innerBase.h }
+			clip.setAttribute('d', `M0 ${navBottom.toFixed(1)}H${vw}V${footerTop.toFixed(1)}H0Z`)
 
-			const ox1 = outer.x
-			const oy1 = outer.y
-			const ox2 = outer.x + outer.w
-			const oy2 = outer.y + outer.h
-			const ix1 = box.x
-			const iy1 = box.y
-			const ix2 = box.x + box.w
-			const iy2 = box.y + box.h
+			// 一点透视：灭点固定在视口中心。房间由 ROOM_W / ROOM_H 定义
+			// （同一世界标度）：横缝组在屏幕边缘的竖直跨度 = 半屏宽×ROOM_H/ROOM_W，
+			// ROOM_W 越大越平缓、越小越陡峭；相机高度随滚动升降
+			const vpx = vw / 2
+			const vpy = vh / 2
+			const f = 0.5 - amp * (sp * 2 - 1)
+			const camY = ROOM_H * f
 
 			const segs: string[] = []
-			const line = (x1: number, y1: number, x2: number, y2: number) => segs.push(`M${x1.toFixed(1)} ${y1.toFixed(1)}L${x2.toFixed(1)} ${y2.toFixed(1)}`)
+			const seg = (ax: number, ay: number, bx: number, by: number) =>
+				segs.push(`M${ax.toFixed(1)} ${ay.toFixed(1)}L${bx.toFixed(1)} ${by.toFixed(1)}`)
 
-			// 四条角线（外层角 → 内层角）
-			const corners: [number, number, number, number][] = [
-				[ox1, oy1, ix1, iy1],
-				[ox2, oy1, ix2, iy1],
-				[ox2, oy2, ix2, iy2],
-				[ox1, oy2, ix1, iy2]
-			]
-			for (const [x1, y1, x2, y2] of corners) line(x1, y1, x2, y2)
-
-			// 上/下墙：外层边缘等分点 → 内层边缘对应等分点
-			const colW = outer.w / cols
-			const innerColW = box.w / cols
-			for (let g = 1; g < cols; g++) {
-				line(ox1 + colW * g, oy1, ix1 + innerColW * g, iy1)
-				line(ox1 + colW * g, oy2, ix1 + innerColW * g, iy2)
+			// 横缝：从灭点射出的射线（等距世界高度 → 铺满整个视口高度）
+			for (const side of [-1, 1] as const) {
+				for (let k = 0; k <= seams; k++) {
+					const worldY = (ROOM_H * k) / seams
+					const dx = side * ROOM_W
+					const dy = camY - worldY
+					// 射线离开视口的参数 t（先撞左/右边界或上/下边界即止）
+					const tx = dx > 0 ? (vw - vpx) / dx : -vpx / dx
+					const ty = Math.abs(dy) < 1e-6 ? Infinity : dy > 0 ? (vh - vpy) / dy : -vpy / dy
+					const t = Math.min(tx, ty) + 1.5
+					seg(vpx, vpy, vpx + dx * t, vpy + dy * t)
+				}
 			}
 
-			// 左/右墙
-			const rowH = outer.h / cols
-			const innerRowH = box.h / cols
-			for (let g = 1; g < cols; g++) {
-				line(ox1, oy1 + rowH * g, ix1, iy1 + innerRowH * g)
-				line(ox2, oy1 + rowH * g, ix2, iy1 + innerRowH * g)
+			// 墙板竖缝：从屏幕中心向两侧铺开，缝距向屏幕边缘缓慢递增
+			// （尽头即灭点方向 —— 和横缝一样汇聚于屏幕中心）
+			const denom = Math.pow(PANEL_GROWTH, PANEL_COUNT) - 1
+			const reach = vpx - PANEL_EDGE_GAP
+			const jointOffs: number[] = []
+			for (let k = 1; k <= PANEL_COUNT; k++) jointOffs.push((reach * (Math.pow(PANEL_GROWTH, k) - 1)) / denom)
+			for (const dir of [-1, 1] as const) {
+				for (const off of jointOffs) seg(vpx + dir * off, 0, vpx + dir * off, vh)
 			}
 
-			// 四面扇形线：沿角线按 1-(1-t)^2 分布取点，连成"隧道"纵深感
-			const point = (c: [number, number, number, number], d: number) => [lerp(c[0], c[2], d), lerp(c[1], c[3], d)] as const
-			const h = 1 / ROWS
-			for (let g = 1; g < ROWS; g++) {
-				const d = 1 - Math.pow(1 - h * g, 2)
-				// 上
-				let [ax, ay] = point(corners[0], d)
-				let [bx, by] = point(corners[1], d)
-				line(ax, ay, bx, by)
-				// 下
-				;[ax, ay] = point(corners[3], d)
-				;[bx, by] = point(corners[2], d)
-				line(ax, ay, bx, by)
-				// 左
-				;[ax, ay] = point(corners[0], d)
-				;[bx, by] = point(corners[3], d)
-				line(ax, ay, bx, by)
-				// 右
-				;[ax, ay] = point(corners[1], d)
-				;[bx, by] = point(corners[2], d)
-				line(ax, ay, bx, by)
+			// 地板：左右墙「地板棱线」（世界高 0 的横缝）在同一条竖缝深度上的
+			// 交点跨屏相连 —— 每个竖缝一条水平格线，构成地板面
+			for (const off of jointOffs) {
+				const y = vpy + (off * camY) / ROOM_W
+				if (y > footerTop + 8) continue
+				seg(vpx - off, y, vpx + off, y)
+			}
+
+			// 天花板：左右墙「天花板棱线」（世界高 ROOM_H 的横缝）在同一条
+			// 竖缝深度上的交点跨屏相连 —— 每个竖缝一条水平格线，构成天花板面
+			for (const off of jointOffs) {
+				const y = vpy - (off * (ROOM_H - camY)) / ROOM_W
+				if (y < navBottom - 8) continue
+				seg(vpx - off, y, vpx + off, y)
 			}
 
 			path.setAttribute('d', segs.join(''))
+
+			// 紫色光效：随机点亮「墙面网格的格子」（与全站 GridFlicker 同款式）。
+			// 每帧按当前几何重算四角 —— 滚动/升降时与网格实时同步滑动
+			const now = performance.now()
+			if (inView && now - lastGlowSpawn > GLOW_SPAWN_MS) {
+				lastGlowSpawn = now
+				const tries = Math.random() < 0.4 ? 2 : 1
+				for (let n = 0; n < tries && glowCells.length < GLOW_MAX; n++) spawnGlow(now, vpx, vpy, camY, jointOffs, navBottom, footerTop)
+			}
+			glowCells = glowCells.filter(c => now - c.t < c.dur)
+			const gctx = glow.getContext('2d')
+			if (gctx) {
+				gctx.clearRect(0, 0, vw, vh)
+				gctx.save()
+				gctx.beginPath()
+				gctx.rect(0, navBottom, vw, Math.max(0, footerTop - navBottom))
+				gctx.clip()
+				for (const c of glowCells) {
+					const alpha = Math.sin(((now - c.t) / c.dur) * Math.PI) * GLOW_PEAK
+					if (alpha <= 0.002) continue
+					const xa = c.side < 0 ? vpx - c.ob : vpx + c.oa
+					const xb = c.side < 0 ? vpx - c.oa : vpx + c.ob
+					const yTop = (x: number) => vpy + (Math.abs(x - vpx) * (camY - (ROOM_H * c.k1) / seams)) / ROOM_W
+					const yBot = (x: number) => vpy + (Math.abs(x - vpx) * (camY - (ROOM_H * c.k0) / seams)) / ROOM_W
+					gctx.beginPath()
+					gctx.moveTo(xa, yBot(xa))
+					gctx.lineTo(xb, yBot(xb))
+					gctx.lineTo(xb, yTop(xb))
+					gctx.lineTo(xa, yTop(xa))
+					gctx.closePath()
+					gctx.fillStyle = `rgba(167,139,250,${alpha.toFixed(3)})`
+					gctx.fill()
+				}
+				gctx.restore()
+			}
 		}
 
 		const frame = () => {
@@ -204,9 +258,6 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		)
 		io.observe(section)
 
-		const ro = new ResizeObserver(() => measure())
-		ro.observe(inner)
-
 		const onResize = () => measure()
 		const onMq = () => measure()
 		window.addEventListener('resize', onResize)
@@ -215,7 +266,6 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		return () => {
 			cancelAnimationFrame(raf)
 			io.disconnect()
-			ro.disconnect()
 			window.removeEventListener('resize', onResize)
 			mq.removeEventListener('change', onMq)
 		}
@@ -223,6 +273,8 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 
 	return (
 		<section ref={sectionRef} className='relative pt-10 pb-24 md:pt-28 md:pb-40'>
+			{/* 紫色光效画布：在网格线下层（面板玻璃会自动压暗背后的光块） */}
+			<canvas ref={glowRef} data-share-glow aria-hidden className='pointer-events-none fixed inset-0 z-0' />
 			<svg
 				ref={svgRef}
 				aria-hidden
@@ -231,12 +283,12 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 				style={{ stroke: 'rgba(255,255,255,0.16)', fill: 'none' }}>
 				<defs>
 					<clipPath id={clipId}>
-						<rect ref={clipRectRef} x='0' y='0' width='0' height='0' />
+						<path ref={clipPathRef} clipRule='evenodd' d='' />
 					</clipPath>
 				</defs>
 				<path ref={pathRef} clipPath={`url(#${clipId})`} />
 			</svg>
-			<div ref={innerRef} className='relative z-10 border' style={{ borderColor: 'var(--color-border)' }}>
+			<div ref={panelRef} className='relative z-10 px-6 py-8 md:px-10 md:py-12' style={{ background: 'rgba(0,0,0,0.5)' }}>
 				{children}
 			</div>
 		</section>
