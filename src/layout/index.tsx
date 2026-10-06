@@ -28,9 +28,9 @@ export default function Layout({ children }: PropsWithChildren) {
   const { maxMD } = useSize()
   useSizeInit()
   const isHome = pathname === '/'
-  // 「伪 3D 房间」覆盖的五个导航页：这些页面用房间线框背景，不用 60px 网格，
-  // 并且共用 layout 上的常驻房间外壳
-  const isRoomPage = isRoomPath(pathname)
+  // 「伪 3D 房间」覆盖的五个导航页：桌面端用房间线框背景并共用常驻房间外壳；
+  // 移动端（<768px）回到普通布局（60px 网格背景），不挂房间
+  const isRoomPage = isRoomPath(pathname) && !maxMD
   const isFullBleed = isHome || pathname.startsWith('/write') || pathname.startsWith('/pictures') || pathname.startsWith('/config') || pathname.startsWith('/blog/')
   const isListLike = !isHome && !isFullBleed
   const transitionPhase = useTransitionStore(s => s.phase)

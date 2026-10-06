@@ -31,8 +31,9 @@ export function useTransitionNavigate() {
     if (href === pathname) return
     // read the freshest phase from the store to avoid any stale-closure races
     if (useTransitionStore.getState().phase !== 'idle') return
-    // 房间页之间导航：房间外壳常驻在 layout 上，只切换中间面板内容，不播转场
-    if (isRoomPath(pathname || '') && isRoomPath(href)) {
+    // 房间页之间导航（仅桌面端）：房间外壳常驻在 layout 上，
+    // 只切换中间面板内容，不播转场
+    if (window.matchMedia('(min-width: 768px)').matches && isRoomPath(pathname || '') && isRoomPath(href)) {
       router.push(href)
       return
     }
