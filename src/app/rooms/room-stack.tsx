@@ -101,7 +101,7 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 			{visible.map(({ key, View }) => (
 				<section key={key} data-room={key} className='relative h-full shrink-0 snap-start snap-always max-md:h-auto'>
 					<div
-						className='scrollbar-none h-full overflow-y-auto md:border md:px-10 md:py-12'
+						className='scrollbar-none h-full overflow-y-auto md:mx-auto md:w-full md:max-w-[720px] md:border md:px-10 md:py-12'
 						style={{ borderColor: 'var(--color-border)', background: 'rgba(0,0,0,0.82)' }}>
 						<View />
 					</div>

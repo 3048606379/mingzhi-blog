@@ -396,7 +396,7 @@ export default function Layout({ children }: PropsWithChildren) {
       ) : (
         <main
           className={`relative z-[1] mx-auto w-full max-w-[720px] flex-1 ${
-            isRoomPage ? 'md:block md:min-h-0 md:px-0 md:py-0' : 'px-4 py-10 md:px-6 md:py-12'
+            isRoomPage ? 'md:block md:min-h-0 md:max-w-none md:px-0 md:py-0' : 'px-4 py-10 md:px-6 md:py-12'
           }`}
         >
           {/* 五个导航页共用常驻的「房间」外壳：它们之间导航时不重建房间，
