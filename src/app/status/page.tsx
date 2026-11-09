@@ -140,7 +140,7 @@ function Row({ index, name, meta, tone = '#666', dot }: { index?: string; name: 
 				</span>
 			)}
 			{dot && (
-				<span className='shrink-0 text-[8px]' style={{ color: dot, animation: dot === '#4ade80' ? 'splash-blink 1.6s step-end infinite' : undefined }}>
+				<span className='shrink-0 text-[8px]' style={{ color: dot, animation: dot === '#4ade80' ? undefined : 'splash-blink 1.6s step-end infinite' }}>
 					●
 				</span>
 			)}
@@ -217,7 +217,7 @@ export default function StatusPage() {
 
 			<div className='mb-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-[9px] tracking-[0.25em]' style={{ color: '#555' }}>
 				<span className='flex items-center gap-2' style={{ color: online ? '#4ade80' : '#f87171' }}>
-					<span style={{ animation: 'splash-blink 1.2s step-end infinite' }}>●</span>
+					<span>●</span>
 					{online ? 'LIVE' : 'OFFLINE'}
 				</span>
 				<span>
