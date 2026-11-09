@@ -13,13 +13,14 @@ import { useTransitionStore, useTransitionNavigate, isPlainClick } from '@/hooks
 import { useSize, useSizeInit } from '@/hooks/use-size'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
 
 const navItems = [
-  { href: '/blog', label: 'Blog' },
-  { href: '/projects', label: 'Projects' },
-  { href: '/share', label: 'Share' },
-  { href: '/status', label: 'Status' },
-  { href: '/about', label: 'About' },
+  { key: 'blog', href: '/blog', label: 'Blog' },
+  { key: 'projects', href: '/projects', label: 'Projects' },
+  { key: 'share', href: '/share', label: 'Share' },
+  { key: 'status', href: '/status', label: 'Status' },
+  { key: 'about', href: '/about', label: 'About' },
 ]
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -36,6 +37,8 @@ export default function Layout({ children }: PropsWithChildren) {
   const transitionPhase = useTransitionStore(s => s.phase)
   const transitionLabel = useTransitionStore(s => s.label)
   const navigate = useTransitionNavigate()
+  const roomActive = useRoomStore(s => s.active)
+  const goRoom = useRoomStore(s => s.go)
   const [typedLabel, setTypedLabel] = useState('')
 
   // load site config from runtime endpoint
@@ -121,11 +124,12 @@ export default function Layout({ children }: PropsWithChildren) {
       const t = e.target as HTMLElement | null
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return
       e.preventDefault()
+      if (goRoom(navItems[idx].key as RoomKey)) return
       navigate(navItems[idx].href)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isRoomPage, navigate])
+  }, [isRoomPage, navigate, goRoom])
 
   // hide scrollbars during entire transition — the fixed overlay cannot paint over
   // native scrollbar tracks, and restoring during reveal makes scrollbars flash
@@ -215,7 +219,10 @@ export default function Layout({ children }: PropsWithChildren) {
   }, [])
 
   return (
-    <div className='flex min-h-dvh flex-col bg-black' style={{ color: 'var(--color-primary)', fontFamily: '"JetBrains Mono","SF Mono",Consolas,monospace' }}>
+    <div
+      className={`flex min-h-dvh flex-col bg-black ${isRoomPage ? 'md:h-dvh md:min-h-0 md:overflow-hidden' : ''}`}
+      style={{ color: 'var(--color-primary)', fontFamily: '"JetBrains Mono","SF Mono",Consolas,monospace' }}
+    >
       <SplashScreen />
       <CustomCursor />
       {/* decode glitch transition overlay */}
@@ -304,7 +311,7 @@ export default function Layout({ children }: PropsWithChildren) {
             }}
           >
             {navItems.map((item, i) => {
-              const active = pathname === item.href
+              const active = pathname === item.href || (isRoomPage && roomActive === item.key)
               return (
                 <Link
                   key={item.href}
@@ -314,6 +321,7 @@ export default function Layout({ children }: PropsWithChildren) {
                   onClick={e => {
                     if (!isPlainClick(e)) return
                     e.preventDefault()
+                    if (isRoomPage && goRoom(item.key as RoomKey)) return
                     navigate(item.href)
                   }}
                 >
@@ -387,7 +395,9 @@ export default function Layout({ children }: PropsWithChildren) {
         </main>
       ) : (
         <main
-          className='relative z-[1] mx-auto w-full max-w-[720px] flex-1 px-4 py-10 md:px-6 md:py-12'
+          className={`relative z-[1] mx-auto w-full max-w-[720px] flex-1 ${
+            isRoomPage ? 'md:block md:min-h-0 md:px-0 md:py-0' : 'px-4 py-10 md:px-6 md:py-12'
+          }`}
         >
           {/* 五个导航页共用常驻的「房间」外壳：它们之间导航时不重建房间，
               只切换面板里的内容（导航也跳过转场动画） */}

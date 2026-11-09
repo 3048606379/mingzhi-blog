@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
+import { useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
 
 const NAV_ENTRIES = [
-	{ href: '/blog', label: 'BLOG', index: '01' },
-	{ href: '/projects', label: 'PROJECTS', index: '02' },
-	{ href: '/share', label: 'SHARE', index: '03' },
-	{ href: '/status', label: 'STATUS', index: '04' },
-	{ href: '/about', label: 'ABOUT', index: '05' }
+	{ key: 'blog', href: '/blog', label: 'BLOG', index: '01' },
+	{ key: 'projects', href: '/projects', label: 'PROJECTS', index: '02' },
+	{ key: 'share', href: '/share', label: 'SHARE', index: '03' },
+	{ key: 'status', href: '/status', label: 'STATUS', index: '04' },
+	{ key: 'about', href: '/about', label: 'ABOUT', index: '05' }
 ]
 
 interface FloatingNavProps {
@@ -18,6 +19,7 @@ interface FloatingNavProps {
 
 export default function FloatingNav({ visible }: FloatingNavProps) {
 	const navigate = useTransitionNavigate()
+	const goRoom = useRoomStore(state => state.go)
 
 	useEffect(() => {
 		if (!visible) return
@@ -92,6 +94,7 @@ export default function FloatingNav({ visible }: FloatingNavProps) {
 								onClick={e => {
 									if (!isPlainClick(e)) return
 									e.preventDefault()
+									if (goRoom(entry.key as RoomKey)) return
 									navigate(entry.href)
 								}}
 							>

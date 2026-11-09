@@ -70,6 +70,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 	const panelRef = useRef<HTMLDivElement>(null)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const pathRef = useRef<SVGPathElement>(null)
+	const wallPathRef = useRef<SVGPathElement>(null)
 	const clipPathRef = useRef<SVGPathElement>(null)
 	const glowRef = useRef<HTMLCanvasElement>(null)
 	const clipId = `share-room-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
@@ -79,9 +80,10 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		const panel = panelRef.current
 		const svg = svgRef.current
 		const path = pathRef.current
+		const wallPath = wallPathRef.current
 		const clip = clipPathRef.current
 		const glow = glowRef.current
-		if (!section || !panel || !svg || !path || !clip || !glow) return
+		if (!section || !panel || !svg || !path || !wallPath || !clip || !glow) return
 
 		const mq = window.matchMedia('(min-width: 768px)')
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -162,12 +164,19 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 			const vh = document.documentElement.clientHeight
 			const vw = document.documentElement.clientWidth
 
-			// 进度：整页滚动 0..1。兼容两种布局：新版滚 window，线上旧版桌面
-			// 是 body 作为滚动容器（window.scrollY 恒为 0），两种都取一遍
+			// 进度：有房间堆栈时取整个堆栈的滚动进度（相机一路缓慢升降，跨房间不跳）；
+			// 没有堆栈（旧布局/移动端）时退回整页滚动进度
 			const docEl = document.documentElement
-			const scrollTop = Math.max(window.scrollY || 0, docEl.scrollTop || 0, document.body.scrollTop || 0)
-			const scrollMax = Math.max(1, Math.max(docEl.scrollHeight, document.body.scrollHeight) - vh)
-			p = Math.min(1, Math.max(0, scrollTop / scrollMax))
+			const stack = document.querySelector('[data-room-scroll]') as HTMLElement | null
+			const stackH = stack?.clientHeight ?? 0
+			if (stack && stackH > 0) {
+				const scrollMax = Math.max(1, stack.scrollHeight - stackH)
+				p = Math.min(1, Math.max(0, stack.scrollTop / scrollMax))
+			} else {
+				const scrollTop = Math.max(window.scrollY || 0, docEl.scrollTop || 0, document.body.scrollTop || 0)
+				const scrollMax = Math.max(1, Math.max(docEl.scrollHeight, document.body.scrollHeight) - vh)
+				p = Math.min(1, Math.max(0, scrollTop / scrollMax))
+			}
 			if (first || reduced) {
 				sp = p
 				first = false
@@ -283,6 +292,19 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 
 			path.setAttribute('d', segs.join(''))
 
+			// 五个房间的「墙壁」：堆栈里相邻房间的接缝横贯屏幕画一条亮线
+			const wallSegs: string[] = []
+			if (stack && stackH > 0) {
+				const scrolled = stack.scrollTop
+				const count = Math.max(1, Math.round(stack.scrollHeight / stackH))
+				for (let k = 0; k <= count; k++) {
+					const y = navBottom + k * stackH - scrolled
+					if (y < navBottom - 2 || y > footerTop + 2) continue
+					wallSegs.push(`M0 ${y.toFixed(1)}H${vw}`)
+				}
+			}
+			wallPath.setAttribute('d', wallSegs.join(''))
+
 			// 紫色光效：随机点亮「墙面网格的格子」（与全站 GridFlicker 同款式）。
 			// 每帧按当前几何重算四角 —— 滚动/升降时与网格实时同步滑动
 			// （出场编排全部完成后才开始生成）
@@ -368,7 +390,7 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 	}, [])
 
 	return (
-		<section ref={sectionRef} className='relative pt-10 pb-24 md:pt-28 md:pb-40'>
+		<section ref={sectionRef} className='relative h-full'>
 			{/* 紫色光效画布：在网格线下层（面板玻璃会自动压暗背后的光块） */}
 			<canvas ref={glowRef} data-share-glow aria-hidden className='pointer-events-none fixed inset-0 z-0' />
 			<svg
@@ -383,12 +405,16 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 					</clipPath>
 				</defs>
 				<path ref={pathRef} clipPath={`url(#${clipId})`} />
+				<path
+					ref={wallPathRef}
+					clipPath={`url(#${clipId})`}
+					style={{ stroke: 'rgba(167,139,250,0.6)', strokeWidth: 1, filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.55))' }}
+				/>
 			</svg>
 			<div
 				ref={panelRef}
-				className='relative z-10 px-6 py-8 md:px-10 md:py-12'
+				className='relative z-10 h-full'
 				style={{
-					background: 'rgba(0,0,0,0.8)',
 					opacity: 0,
 					transform: 'translateY(14px)',
 					transition: 'opacity 0.7s ease, transform 0.7s ease',
