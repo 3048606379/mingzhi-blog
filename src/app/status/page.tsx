@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HudPageHeader } from '@/components/hud-page'
 
 type ServerStatus = {
@@ -162,7 +162,18 @@ function Row({ index, name, meta, tone = '#666', dot }: { index?: string; name: 
 export default function StatusPage() {
 	const [data, setData] = useState<ServerStatus | null>(null)
 	const [error, setError] = useState<string | null>(null)
-	const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+	const clockRef = useRef<HTMLSpanElement>(null)
+
+	// 时钟：每帧直接写 DOM，跟着现实时间连续走，不触发 React 重渲染
+	useEffect(() => {
+		let raf = 0
+		const tick = () => {
+			if (clockRef.current) clockRef.current.textContent = formatClock(new Date())
+			raf = requestAnimationFrame(tick)
+		}
+		raf = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(raf)
+	}, [])
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setInterval> | null = null
@@ -175,7 +186,6 @@ export default function StatusPage() {
 				const json = (await res.json()) as ServerStatus
 				if (cancelled) return
 				setData(json)
-				setUpdatedAt(new Date(json.time))
 				setError(null)
 			} catch (err: any) {
 				if (cancelled) return
@@ -226,7 +236,7 @@ export default function StatusPage() {
 					{online ? 'LIVE' : 'OFFLINE'}
 				</span>
 				<span>
-					SYNC {updatedAt ? formatClock(updatedAt) : '--:--:--.---'}
+					TIME <span ref={clockRef}>--:--:--.---</span>
 				</span>
 				<span className='truncate'>{data?.host.name ?? 'UNKNOWN HOST'}</span>
 				<span>{data ? `${data.host.cores} CORES` : '-- CORES'}</span>
