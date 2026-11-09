@@ -9,7 +9,7 @@ const NAV_COLUMNS = [
 	{ href: '/blog', label: 'BLOG', index: '01' },
 	{ href: '/projects', label: 'PROJECTS', index: '02' },
 	{ href: '/share', label: 'SHARE', index: '03' },
-	{ href: '/bloggers', label: 'BLOGGERS', index: '04' },
+	{ href: '/status', label: 'STATUS', index: '04' },
 	{ href: '/about', label: 'ABOUT', index: '05' }
 ]
 

@@ -52,8 +52,8 @@ const list = [
 	{
 		icon: WebsiteOutlineSVG,
 		iconActive: WebsiteFilledSVG,
-		label: '优秀博客',
-		href: '/bloggers'
+		label: '服务器状态',
+		href: '/status'
 	}
 ]
 

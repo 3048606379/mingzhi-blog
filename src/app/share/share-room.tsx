@@ -59,7 +59,7 @@ const DECK_STEP = 11
 const DECK_DUR = 520
 
 /** 五个「伪 3D 房间」页面（房间外壳挂在 layout 上；它们之间导航不重建房间） */
-export const ROOM_PATHS = ['/blog', '/projects', '/share', '/bloggers', '/about']
+export const ROOM_PATHS = ['/blog', '/projects', '/share', '/status', '/about']
 export const isRoomPath = (p: string) => ROOM_PATHS.includes(p.replace(/\/$/, ''))
 
 /** 本次会话是否已经构建过房间：只在首次进入房间页时播一次「房间构建」动画 */
