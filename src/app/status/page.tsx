@@ -28,7 +28,7 @@ type ServerStatus = {
 	containersUpdated: number | null
 }
 
-const REFRESH_MS = 5000
+const REFRESH_MS = 1000
 
 function formatBytes(bytes: number, decimals = 1): string {
 	if (!bytes || bytes < 0) return '0 B'
@@ -53,6 +53,11 @@ function formatUptime(seconds: number): string {
 	if (d > 0) return `${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`
 	if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`
 	return `${m}m`
+}
+
+function formatClock(date: Date): string {
+	const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+	return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
 }
 
 function accentFor(percent: number): string {
@@ -221,10 +226,7 @@ export default function StatusPage() {
 					{online ? 'LIVE' : 'OFFLINE'}
 				</span>
 				<span>
-					SYNC{' '}
-					{updatedAt
-						? updatedAt.toLocaleTimeString('zh-CN', { hour12: false })
-						: '--:--:--'}
+					SYNC {updatedAt ? formatClock(updatedAt) : '--:--:--.---'}
 				</span>
 				<span className='truncate'>{data?.host.name ?? 'UNKNOWN HOST'}</span>
 				<span>{data ? `${data.host.cores} CORES` : '-- CORES'}</span>
