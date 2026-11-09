@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { ROOM_ORDER, ROOM_PATHS, useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
+import { RoomActiveContext } from '@/hooks/use-room-active'
 import { useSize } from '@/hooks/use-size'
 import BlogView from '@/app/blog/view'
 import ProjectsView from '@/app/projects/view'
@@ -103,7 +104,9 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 					<div
 						className='scrollbar-none h-full overflow-y-auto md:mx-auto md:w-full md:max-w-[720px] md:border md:px-10 md:py-12'
 						style={{ borderColor: 'var(--color-border)', background: 'rgba(0,0,0,0.82)' }}>
-						<View />
+						<RoomActiveContext.Provider value={key === active}>
+							<View />
+						</RoomActiveContext.Provider>
 					</div>
 				</section>
 			))}
