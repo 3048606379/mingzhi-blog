@@ -1,11 +1,12 @@
 import { useWriteStore } from '../stores/write-store'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const defaultText = 'text'
 
 export function WriteEditor() {
 	const { form, updateForm, images, addFiles, setEditorRef } = useWriteStore()
 	const textareaRef = useRef<HTMLTextAreaElement>(null)
+	const [dragOver, setDragOver] = useState(false)
 
 	useEffect(() => {
 		setEditorRef(textareaRef.current)
@@ -149,6 +150,39 @@ export function WriteEditor() {
 		}
 	}
 
+	const acceptsDrop = (e: React.DragEvent<HTMLTextAreaElement>) => {
+		const types = Array.from(e.dataTransfer.types)
+		return types.includes('Files') || types.includes('text/markdown')
+	}
+
+	const handleDragOver = (e: React.DragEvent<HTMLTextAreaElement>) => {
+		if (!acceptsDrop(e)) return
+		e.preventDefault()
+		e.dataTransfer.dropEffect = 'copy'
+		setDragOver(true)
+	}
+
+	const handleDrop = async (e: React.DragEvent<HTMLTextAreaElement>) => {
+		if (!acceptsDrop(e)) return
+		e.preventDefault()
+		setDragOver(false)
+
+		const files = Array.from(e.dataTransfer.files).filter(file => file.type.startsWith('image/'))
+		if (files.length > 0) {
+			const resultImages = await addFiles(files).catch(() => [])
+			if (resultImages && resultImages.length > 0) {
+				const markdowns = resultImages.map(item => (item.type === 'url' ? `![](${item.url})` : `![](local-image:${item.id})`)).join('\n')
+				insertText(markdowns)
+			}
+			return
+		}
+
+		const markdown = e.dataTransfer.getData('text/markdown').trim()
+		if (markdown) {
+			insertText(markdown)
+		}
+	}
+
 	return (
 		<div className='flex min-h-[70vh] w-full max-w-[860px] flex-col' style={{ animation: 'hud-row-in 0.4s ease both' }}>
 			<div className='text-[9px] tracking-[0.35em]' style={{ color: '#444' }}>
@@ -174,13 +208,16 @@ export function WriteEditor() {
 			</div>
 			<textarea
 				ref={textareaRef}
-				placeholder='> markdown 内容...'
+				placeholder='> markdown 内容...（图片可直接拖进来）'
 				className='mt-3 h-[60vh] w-full flex-1 resize-none border bg-transparent p-4 text-sm leading-relaxed outline-none transition-colors hover:border-[var(--color-brand)] focus:border-[var(--color-brand)]'
-				style={{ color: '#aaa' }}
+				style={{ color: '#aaa', borderColor: dragOver ? 'var(--color-brand)' : undefined }}
 				value={form.md}
 				onChange={e => updateForm({ md: e.target.value })}
 				onKeyDown={handleKeyDown}
 				onPaste={handlePaste}
+				onDragOver={handleDragOver}
+				onDragLeave={() => setDragOver(false)}
+				onDrop={handleDrop}
 			/>
 		</div>
 	)

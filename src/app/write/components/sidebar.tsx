@@ -1,6 +1,7 @@
 import { CoverSection } from './sections/cover-section'
 import { MetaSection } from './sections/meta-section'
 import { ImagesSection } from './sections/images-section'
+import { StickersSection } from './sections/stickers-section'
 
 export function WriteSidebar() {
 	return (
@@ -8,6 +9,7 @@ export function WriteSidebar() {
 			<CoverSection />
 			<MetaSection />
 			<ImagesSection />
+			<StickersSection />
 		</div>
 	)
 }
