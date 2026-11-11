@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { HudPageHeader } from '@/components/hud-page'
 
 type ServerStatus = {
@@ -28,7 +28,7 @@ type ServerStatus = {
 	containersUpdated: number | null
 }
 
-const REFRESH_MS = 5000
+const REFRESH_MS = 1000
 
 function formatBytes(bytes: number, decimals = 1): string {
 	if (!bytes || bytes < 0) return '0 B'
@@ -53,6 +53,11 @@ function formatUptime(seconds: number): string {
 	if (d > 0) return `${d}d ${String(h).padStart(2, '0')}h ${String(m).padStart(2, '0')}m`
 	if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`
 	return `${m}m`
+}
+
+function formatClock(date: Date): string {
+	const pad = (n: number, width = 2) => String(n).padStart(width, '0')
+	return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`
 }
 
 function accentFor(percent: number): string {
@@ -157,7 +162,18 @@ function Row({ index, name, meta, tone = '#666', dot }: { index?: string; name: 
 export default function StatusPage() {
 	const [data, setData] = useState<ServerStatus | null>(null)
 	const [error, setError] = useState<string | null>(null)
-	const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
+	const clockRef = useRef<HTMLSpanElement>(null)
+
+	// 时钟：每帧直接写 DOM，跟着现实时间连续走，不触发 React 重渲染
+	useEffect(() => {
+		let raf = 0
+		const tick = () => {
+			if (clockRef.current) clockRef.current.textContent = formatClock(new Date())
+			raf = requestAnimationFrame(tick)
+		}
+		raf = requestAnimationFrame(tick)
+		return () => cancelAnimationFrame(raf)
+	}, [])
 
 	useEffect(() => {
 		let timer: ReturnType<typeof setInterval> | null = null
@@ -170,7 +186,6 @@ export default function StatusPage() {
 				const json = (await res.json()) as ServerStatus
 				if (cancelled) return
 				setData(json)
-				setUpdatedAt(new Date(json.time))
 				setError(null)
 			} catch (err: any) {
 				if (cancelled) return
@@ -221,10 +236,7 @@ export default function StatusPage() {
 					{online ? 'LIVE' : 'OFFLINE'}
 				</span>
 				<span>
-					SYNC{' '}
-					{updatedAt
-						? updatedAt.toLocaleTimeString('zh-CN', { hour12: false })
-						: '--:--:--'}
+					TIME <span ref={clockRef}>--:--:--.---</span>
 				</span>
 				<span className='truncate'>{data?.host.name ?? 'UNKNOWN HOST'}</span>
 				<span>{data ? `${data.host.cores} CORES` : '-- CORES'}</span>

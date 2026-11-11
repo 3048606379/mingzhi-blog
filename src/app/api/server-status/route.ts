@@ -15,7 +15,7 @@ let prevCpu: CpuSample | null = null
 let prevWinCpu: CpuSample | null = null
 let prevNet: NetSample | null = null
 let payloadCache: { at: number; body: unknown } | null = null
-const CACHE_MS = 1500
+const CACHE_MS = 900
 
 const pct = (used: number, total: number) => (total > 0 ? Math.max(0, Math.min(100, (used / total) * 100)) : 0)
 
