@@ -20,6 +20,7 @@ const CONTENT_TYPES: Record<string, string> = {
 	'.jpg': 'image/jpeg',
 	'.jpeg': 'image/jpeg',
 	'.gif': 'image/gif',
+	'.avif': 'image/avif',
 	'.svg': 'image/svg+xml',
 	'.mp3': 'audio/mpeg',
 	'.wav': 'audio/wav'

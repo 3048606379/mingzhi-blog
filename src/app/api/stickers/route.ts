@@ -45,7 +45,7 @@ export async function GET() {
 					const stat = await fs.stat(path.join(STICKERS_DIR, entry.name)).catch(() => null)
 					return {
 						name: entry.name,
-						url: `/stickers/${encodeURIComponent(entry.name)}`,
+						url: `/api/stickers/${encodeURIComponent(entry.name)}`,
 						mtime: stat?.mtimeMs ?? 0
 					}
 				})
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
 		await fs.mkdir(STICKERS_DIR, { recursive: true })
 		await fs.writeFile(path.join(STICKERS_DIR, filename), buffer)
 
-		return noStore({ ok: true, name: filename, url: `/stickers/${filename}` })
+		return noStore({ ok: true, name: filename, url: `/api/stickers/${filename}` })
 	} catch (err: any) {
 		console.error('Sticker upload error:', err)
 		return noStore({ error: err?.message || 'Internal error' }, 500)
