@@ -292,13 +292,18 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 
 			path.setAttribute('d', segs.join(''))
 
-			// 五个房间的「墙壁」：堆栈里相邻房间的接缝横贯屏幕画一条亮线
+			// 每个房间的上下边界：按 section 的实际位置取线（长房间也准确）。
+			// 用视口坐标直接画在 fixed 的 SVG 上，随滚动每帧更新。
 			const wallSegs: string[] = []
 			if (stack && stackH > 0) {
-				const scrolled = stack.scrollTop
-				const count = Math.max(1, Math.round(stack.scrollHeight / stackH))
-				for (let k = 0; k <= count; k++) {
-					const y = navBottom + k * stackH - scrolled
+				const rooms = Array.from(stack.querySelectorAll<HTMLElement>('[data-room]'))
+				const lines = new Set<number>()
+				for (const room of rooms) {
+					const rect = room.getBoundingClientRect()
+					lines.add(Math.round(rect.top))
+					lines.add(Math.round(rect.bottom))
+				}
+				for (const y of lines) {
 					if (y < navBottom - 2 || y > footerTop + 2) continue
 					wallSegs.push(`M0 ${y.toFixed(1)}H${vw}`)
 				}
