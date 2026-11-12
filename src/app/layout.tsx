@@ -1,13 +1,15 @@
 import '@/styles/globals.css'
-import { JetBrains_Mono } from 'next/font/google'
+import localFont from 'next/font/local'
 
 import type { Metadata } from 'next'
 import Layout from '@/layout'
 import Head from '@/layout/head'
 import siteContent from '@/config/site-content.json'
 
-const jetbrainsMono = JetBrains_Mono({
-	subsets: ['latin'],
+const jetbrainsMono = localFont({
+	src: './fonts/jetbrains-mono-latin-wght-normal.woff2',
+	weight: '100 800',
+	style: 'normal',
 	variable: '--font-mono',
 	display: 'swap'
 })
