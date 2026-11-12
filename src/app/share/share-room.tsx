@@ -68,7 +68,6 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 	const panelRef = useRef<HTMLDivElement>(null)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const pathRef = useRef<SVGPathElement>(null)
-	const wallPathRef = useRef<SVGPathElement>(null)
 	const clipPathRef = useRef<SVGPathElement>(null)
 	const glowRef = useRef<HTMLCanvasElement>(null)
 	const clipId = `share-room-clip-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
@@ -78,10 +77,9 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 		const panel = panelRef.current
 		const svg = svgRef.current
 		const path = pathRef.current
-		const wallPath = wallPathRef.current
 		const clip = clipPathRef.current
 		const glow = glowRef.current
-		if (!section || !panel || !svg || !path || !wallPath || !clip || !glow) return
+		if (!section || !panel || !svg || !path || !clip || !glow) return
 
 		const mq = window.matchMedia('(min-width: 768px)')
 		const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -290,24 +288,6 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 
 			path.setAttribute('d', segs.join(''))
 
-			// 每个房间的上下边界：按 section 的实际位置取线（长房间也准确）。
-			// 用视口坐标直接画在 fixed 的 SVG 上，随滚动每帧更新。
-			const wallSegs: string[] = []
-			if (stack && stackH > 0) {
-				const rooms = Array.from(stack.querySelectorAll<HTMLElement>('[data-room]'))
-				const lines = new Set<number>()
-				for (const room of rooms) {
-					const rect = room.getBoundingClientRect()
-					lines.add(Math.round(rect.top))
-					lines.add(Math.round(rect.bottom))
-				}
-				for (const y of lines) {
-					if (y < navBottom - 2 || y > footerTop + 2) continue
-					wallSegs.push(`M0 ${y.toFixed(1)}H${vw}`)
-				}
-			}
-			wallPath.setAttribute('d', wallSegs.join(''))
-
 			// 紫色光效：随机点亮「墙面网格的格子」（与全站 GridFlicker 同款式）。
 			// 每帧按当前几何重算四角 —— 滚动/升降时与网格实时同步滑动
 			// （出场编排全部完成后才开始生成）
@@ -408,11 +388,6 @@ export default function ShareRoom({ children }: PropsWithChildren) {
 					</clipPath>
 				</defs>
 				<path ref={pathRef} clipPath={`url(#${clipId})`} />
-				<path
-					ref={wallPathRef}
-					clipPath={`url(#${clipId})`}
-					style={{ stroke: 'rgba(167,139,250,0.6)', strokeWidth: 1, filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.55))' }}
-				/>
 			</svg>
 			<div
 				ref={panelRef}
