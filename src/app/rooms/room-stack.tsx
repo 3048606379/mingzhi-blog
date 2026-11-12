@@ -18,10 +18,15 @@ const ROOMS: { key: RoomKey; View: React.ComponentType }[] = [
 	{ key: 'about', View: AboutView }
 ]
 
+function sectionTop(section: HTMLElement, scroller: HTMLElement) {
+	return section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
+}
+
 /**
  * 五个二级页面在桌面端合并成一个竖向房间堆栈：
  * - 每个房间至少占满导航与页脚之间的可视区；内容超过一屏时房间跟着长高
- * - 滚轮整屏吸附（snap proximity），长内容房间可以正常往下读
+ * - 滚动停止后分页吸附，静止时视口里只有一个房间
+ * - 长内容房间（如 share）内部没有吸附点，可以正常往下读
  * - 滚动到哪个房间，地址栏就换成对应路由（replaceState，不触发重新渲染）
  * - 键盘 1-5 / 顶部导航 / 悬浮导航都会滚到对应房间
  * - 移动端（<768px）维持原来的「一页一房间」
@@ -32,9 +37,6 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 	const activeRef = useRef<RoomKey>(initial)
 	const maxMD = useSize(state => state.maxMD)
 	const initialIndex = ROOM_ORDER.indexOf(initial)
-
-	const sectionTop = (section: HTMLElement, scroller: HTMLElement) =>
-		section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
 
 	const scrollToRoom = (key: RoomKey, behavior: ScrollBehavior = 'auto') => {
 		const el = containerRef.current
@@ -97,6 +99,67 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
+	// 滚动停止后分页吸附：视口里同时出现两个房间时，按滚动方向决定停在哪一间。
+	// - 短房间：超过 1/4 屏才算翻页，否则回弹
+	// - 长房间（share）：内部自由滚动；到边界时向下进入下一房间，向上退回本房间底部
+	useEffect(() => {
+		const el = containerRef.current
+		if (!el) return
+		let timer: ReturnType<typeof setTimeout> | null = null
+		let lastTop = el.scrollTop
+		let direction = 1
+
+		const snap = () => {
+			const rooms = Array.from(el.querySelectorAll<HTMLElement>('[data-room]'))
+			if (rooms.length <= 1) return
+
+			const top = el.scrollTop
+			const vh = el.clientHeight
+			const bottom = top + vh
+			const tops = rooms.map(room => sectionTop(room, el))
+			const visible = rooms.filter((room, i) => tops[i] < bottom - 2 && tops[i] + room.offsetHeight > top + 2)
+			if (visible.length <= 1) return
+
+			let index = 0
+			for (let i = 0; i < rooms.length; i++) {
+				if (tops[i] <= top + 1) index = i
+				else break
+			}
+			const currentTop = tops[index]
+			const currentHeight = rooms[index].offsetHeight
+			const nextTop = index + 1 < rooms.length ? tops[index + 1] : null
+			const threshold = vh * 0.25
+
+			let targetTop = currentTop
+			if (currentHeight > vh && nextTop !== null && nextTop < bottom) {
+				// 长房间底部与下一房间同时露出：向下进入下一房间，向上退回本房间底部
+				targetTop = direction > 0 ? nextTop : Math.max(currentTop, nextTop - vh)
+			} else if (direction > 0) {
+				// 向下：超过 1/4 屏才翻到下一房间，否则回到当前房间顶部
+				if (top - currentTop >= threshold) targetTop = nextTop ?? tops[tops.length - 1]
+			} else {
+				// 向上：离下一房间顶部不足 1/4 屏就回弹，否则回到上一房间顶部
+				if (nextTop !== null && nextTop - top < threshold) targetTop = nextTop
+			}
+
+			if (Math.abs(targetTop - top) > 1) el.scrollTo({ top: targetTop, behavior: 'smooth' })
+		}
+
+		const onScroll = () => {
+			const now = el.scrollTop
+			if (now !== lastTop) direction = now > lastTop ? 1 : -1
+			lastTop = now
+			if (timer) clearTimeout(timer)
+			timer = setTimeout(snap, 150)
+		}
+
+		el.addEventListener('scroll', onScroll, { passive: true })
+		return () => {
+			el.removeEventListener('scroll', onScroll)
+			if (timer) clearTimeout(timer)
+		}
+	}, [])
+
 	// 视口高度变化后重新对齐到当前房间顶部
 	useEffect(() => {
 		const el = containerRef.current
@@ -116,12 +179,12 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 		<div
 			ref={containerRef}
 			data-room-scroll
-			className='scrollbar-none h-full w-full snap-y snap-proximity overflow-y-auto max-md:h-auto max-md:snap-none max-md:overflow-visible'>
+			className='scrollbar-none h-full w-full overflow-y-auto max-md:h-auto max-md:overflow-visible'>
 			{visible.map(({ key, View }) => (
 				<section
 					key={key}
 					data-room={key}
-					className='relative w-full shrink-0 snap-start snap-always md:py-10'>
+					className='relative min-h-full w-full shrink-0 md:py-10 max-md:min-h-0'>
 					<div
 						className='md:mx-auto md:w-full md:max-w-[720px] md:border md:px-10 md:py-12'
 						style={{ borderColor: 'var(--color-border)', background: 'rgba(0,0,0,0.82)' }}>
