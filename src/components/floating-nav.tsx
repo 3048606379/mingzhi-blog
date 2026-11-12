@@ -6,11 +6,11 @@ import { useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition
 import { useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
 
 const NAV_ENTRIES = [
-	{ key: 'blog', href: '/blog', label: 'BLOG', index: '01' },
-	{ key: 'projects', href: '/projects', label: 'PROJECTS', index: '02' },
-	{ key: 'share', href: '/share', label: 'SHARE', index: '03' },
-	{ key: 'status', href: '/status', label: 'STATUS', index: '04' },
-	{ key: 'about', href: '/about', label: 'ABOUT', index: '05' }
+	{ key: 'blog', href: '/rooms#blog', label: 'BLOG', index: '01' },
+	{ key: 'projects', href: '/rooms#projects', label: 'PROJECTS', index: '02' },
+	{ key: 'share', href: '/rooms#share', label: 'SHARE', index: '03' },
+	{ key: 'status', href: '/rooms#status', label: 'STATUS', index: '04' },
+	{ key: 'about', href: '/rooms#about', label: 'ABOUT', index: '05' }
 ]
 
 interface FloatingNavProps {

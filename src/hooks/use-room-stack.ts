@@ -6,13 +6,10 @@ import { create } from 'zustand'
 export const ROOM_ORDER = ['blog', 'projects', 'share', 'status', 'about'] as const
 export type RoomKey = (typeof ROOM_ORDER)[number]
 
-export const ROOM_PATHS: Record<RoomKey, string> = {
-	blog: '/blog',
-	projects: '/projects',
-	share: '/share',
-	status: '/status',
-	about: '/about'
-}
+/** 五个房间共用一个路由，房间用 #hash 区分（只用于首屏定位，不参与路由） */
+export const ROOM_PATH = '/rooms'
+export const roomHref = (key: RoomKey) => `${ROOM_PATH}#${key}`
+export const isRoomPath = (p: string) => p.split(/[?#]/)[0].replace(/\/$/, '') === ROOM_PATH
 
 type RoomStackState = {
 	/** 当前停在哪个房间（滚动时自动更新） */

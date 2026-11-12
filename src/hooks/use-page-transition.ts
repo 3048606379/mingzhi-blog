@@ -3,7 +3,7 @@
 import { create } from 'zustand'
 import { useRouter, usePathname } from 'next/navigation'
 import type { MouseEvent } from 'react'
-import { isRoomPath } from '@/app/share/share-room'
+import { isRoomPath } from '@/hooks/use-room-stack'
 
 type Phase = 'idle' | 'cover' | 'reveal'
 

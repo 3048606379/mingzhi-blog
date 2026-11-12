@@ -7,20 +7,20 @@ import SplashScreen from '@/components/splash-screen'
 import CustomCursor from '@/components/custom-cursor'
 import GridFlicker from '@/components/grid-flicker'
 import FloatingNav from '@/components/floating-nav'
-import ShareRoom, { isRoomPath } from '@/app/share/share-room'
+import ShareRoom from '@/app/share/share-room'
 import { KeyHints } from '@/components/key-hints'
 import { useTransitionStore, useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition'
 import { useSize, useSizeInit } from '@/hooks/use-size'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
+import { isRoomPath, useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
 
 const navItems = [
-  { key: 'blog', href: '/blog', label: 'Blog' },
-  { key: 'projects', href: '/projects', label: 'Projects' },
-  { key: 'share', href: '/share', label: 'Share' },
-  { key: 'status', href: '/status', label: 'Status' },
-  { key: 'about', href: '/about', label: 'About' },
+  { key: 'blog', href: '/rooms#blog', label: 'Blog' },
+  { key: 'projects', href: '/rooms#projects', label: 'Projects' },
+  { key: 'share', href: '/rooms#share', label: 'Share' },
+  { key: 'status', href: '/rooms#status', label: 'Status' },
+  { key: 'about', href: '/rooms#about', label: 'About' },
 ]
 
 export default function Layout({ children }: PropsWithChildren) {
@@ -29,9 +29,10 @@ export default function Layout({ children }: PropsWithChildren) {
   const { maxMD } = useSize()
   useSizeInit()
   const isHome = pathname === '/'
-  // 「伪 3D 房间」覆盖的五个导航页：桌面端用房间线框背景并共用常驻房间外壳；
+  const isRoomsPage = isRoomPath(pathname)
+  // 五个房间合并到 /rooms：桌面端用房间线框背景并共用常驻房间外壳；
   // 移动端（<768px）回到普通布局（60px 网格背景），不挂房间
-  const isRoomPage = isRoomPath(pathname) && !maxMD
+  const isRoomPage = isRoomsPage && !maxMD
   const isFullBleed = isHome || pathname.startsWith('/write') || pathname.startsWith('/pictures') || pathname.startsWith('/config') || pathname.startsWith('/blog/')
   const isListLike = !isHome && !isFullBleed
   const transitionPhase = useTransitionStore(s => s.phase)
@@ -311,7 +312,7 @@ export default function Layout({ children }: PropsWithChildren) {
             }}
           >
             {navItems.map((item, i) => {
-              const active = pathname === item.href || (isRoomPage && roomActive === item.key)
+              const active = isRoomsPage && roomActive === item.key
               return (
                 <Link
                   key={item.href}
@@ -321,7 +322,11 @@ export default function Layout({ children }: PropsWithChildren) {
                   onClick={e => {
                     if (!isPlainClick(e)) return
                     e.preventDefault()
-                    if (isRoomPage && goRoom(item.key as RoomKey)) return
+                    if (isRoomsPage) {
+                      if (!maxMD && goRoom(item.key as RoomKey)) return
+                      window.location.hash = item.key
+                      return
+                    }
                     navigate(item.href)
                   }}
                 >

@@ -23,37 +23,38 @@ import { cn } from '@/lib/utils'
 import { useSize } from '@/hooks/use-size'
 import { useConfigStore } from '@/app/(home)/stores/config-store'
 import { HomeDraggableLayer } from '@/app/(home)/home-draggable-layer'
+import { useRoomStore } from '@/hooks/use-room-stack'
 
 const list = [
 	{
 		icon: ScrollOutlineSVG,
 		iconActive: ScrollFilledSVG,
 		label: '近期文章',
-		href: '/blog'
+		href: '/rooms#blog'
 	},
 	{
 		icon: ProjectsOutlineSVG,
 		iconActive: ProjectsFilledSVG,
 		label: '我的项目',
-		href: '/projects'
+		href: '/rooms#projects'
 	},
 	{
 		icon: AboutOutlineSVG,
 		iconActive: AboutFilledSVG,
 		label: '关于网站',
-		href: '/about'
+		href: '/rooms#about'
 	},
 	{
 		icon: ShareOutlineSVG,
 		iconActive: ShareFilledSVG,
 		label: '推荐分享',
-		href: '/share'
+		href: '/rooms#share'
 	},
 	{
 		icon: WebsiteOutlineSVG,
 		iconActive: WebsiteFilledSVG,
 		label: '服务器状态',
-		href: '/status'
+		href: '/rooms#status'
 	}
 ]
 
@@ -61,6 +62,7 @@ const extraSize = 8
 
 export default function NavCard() {
 	const pathname = usePathname()
+	const roomActive = useRoomStore(s => s.active)
 	const center = useCenterStore()
 	const [show, setShow] = useState(false)
 	const { maxSM } = useSize()
@@ -70,9 +72,12 @@ export default function NavCard() {
 	const hiCardStyles = cardStyles.hiCard
 
 	const activeIndex = useMemo(() => {
-		const index = list.findIndex(item => pathname === item.href)
+		let index = -1
+		if (pathname === '/rooms') index = list.findIndex(item => item.href === `/rooms#${roomActive}`)
+		else if (pathname.startsWith('/blog/')) index = list.findIndex(item => item.href === '/rooms#blog')
+		else index = list.findIndex(item => pathname === item.href)
 		return index >= 0 ? index : undefined
-	}, [pathname])
+	}, [pathname, roomActive])
 
 	useEffect(() => {
 		setShow(true)

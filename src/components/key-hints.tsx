@@ -3,7 +3,7 @@
 import { usePathname } from 'next/navigation'
 
 /** Exact routes that mount `useEditMode` — Ctrl+. toggles edit mode only there. */
-const EDIT_ROUTES = ['/blog', '/projects', '/share', '/bloggers']
+const EDIT_ROUTES = ['/rooms', '/bloggers']
 
 /**
  * Desktop-only keyboard hints (bottom-left, HUD style).

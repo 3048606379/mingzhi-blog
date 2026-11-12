@@ -41,7 +41,7 @@ export function usePublish() {
 			setLoading(true)
 			await deleteBlog(targetSlug)
 			toast.success('删除成功')
-			navigate('/blog')
+			navigate('/rooms#blog')
 		} catch (err: any) {
 			console.error(err)
 			toast.error(err?.message || '删除失败')

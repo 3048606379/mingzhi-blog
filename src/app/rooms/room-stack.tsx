@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ROOM_ORDER, ROOM_PATHS, useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
+import { ROOM_ORDER, roomHref, useRoomStore, type RoomKey } from '@/hooks/use-room-stack'
 import { RoomActiveContext } from '@/hooks/use-room-active'
 import { useSize } from '@/hooks/use-size'
 import BlogView from '@/app/blog/view'
@@ -22,6 +22,13 @@ function sectionTop(section: HTMLElement, scroller: HTMLElement) {
 	return section.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop
 }
 
+/** 从 #share 这类 hash 里取出房间 key；无效时返回 null */
+function readHashRoom(): RoomKey | null {
+	if (typeof window === 'undefined') return null
+	const key = window.location.hash.replace(/^#/, '') as RoomKey
+	return ROOM_ORDER.includes(key) ? key : null
+}
+
 /**
  * 五个二级页面在桌面端合并成一个竖向房间堆栈：
  * - 每个房间至少占满导航与页脚之间的可视区；内容超过一屏时房间跟着长高
@@ -36,7 +43,6 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 	const [active, setActive] = useState<RoomKey>(initial)
 	const activeRef = useRef<RoomKey>(initial)
 	const maxMD = useSize(state => state.maxMD)
-	const initialIndex = ROOM_ORDER.indexOf(initial)
 
 	const scrollToRoom = (key: RoomKey, behavior: ScrollBehavior = 'auto') => {
 		const el = containerRef.current
@@ -46,22 +52,27 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 		el.scrollTo({ top: sectionTop(target, el), behavior })
 	}
 
-	// 首屏定位 + 把滚动的能力注册给导航
+	// 首屏定位（支持 /rooms#share）+ 注册桌面端滚动；移动端只显示一间，用 hash 切换
 	useLayoutEffect(() => {
 		const el = containerRef.current
 		if (!el) return
-		const target = el.querySelector<HTMLElement>(`[data-room="${initial}"]`)
+		const startKey = readHashRoom() ?? initial
+		activeRef.current = startKey
+		setActive(startKey)
+		useRoomStore.getState().setActive(startKey)
+
+		if (maxMD) {
+			useRoomStore.getState().register(null)
+			window.scrollTo(0, 0)
+			return () => useRoomStore.getState().register(null)
+		}
+
+		const target = el.querySelector<HTMLElement>(`[data-room="${startKey}"]`)
 		if (target) el.scrollTop = sectionTop(target, el)
 		useRoomStore.getState().register(scrollToRoom)
 		return () => useRoomStore.getState().register(null)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [initial, initialIndex])
-
-	useEffect(() => {
-		activeRef.current = initial
-		setActive(initial)
-		useRoomStore.getState().setActive(initial)
-	}, [initial])
+	}, [initial, maxMD])
 
 	// 滚动时同步「当前房间」+ 地址栏（按每个房间的实际高度判断，不再假设一屏高）
 	useEffect(() => {
@@ -88,7 +99,7 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 				activeRef.current = key
 				setActive(key)
 				useRoomStore.getState().setActive(key)
-				window.history.replaceState(null, '', ROOM_PATHS[key])
+				window.history.replaceState(null, '', roomHref(key))
 			})
 		}
 		el.addEventListener('scroll', onScroll, { passive: true })
@@ -96,6 +107,25 @@ export default function RoomStack({ initial }: { initial: RoomKey }) {
 			el.removeEventListener('scroll', onScroll)
 			cancelAnimationFrame(raf)
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [])
+
+	// 移动端：导航只改 hash，这里负责切换到对应房间
+	useEffect(() => {
+		const onHash = () => {
+			const key = readHashRoom()
+			if (!key) return
+			if (window.matchMedia('(max-width: 767px)').matches) {
+				activeRef.current = key
+				setActive(key)
+				useRoomStore.getState().setActive(key)
+				window.scrollTo({ top: 0, behavior: 'smooth' })
+			} else {
+				scrollToRoom(key, 'smooth')
+			}
+		}
+		window.addEventListener('hashchange', onHash)
+		return () => window.removeEventListener('hashchange', onHash)
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 

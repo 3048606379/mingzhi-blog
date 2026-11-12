@@ -1,5 +1,5 @@
-import RoomStack from '@/app/rooms/room-stack'
+import { redirect } from 'next/navigation'
 
 export default function Page() {
-	return <RoomStack initial='status' />
+	redirect('/rooms#status')
 }

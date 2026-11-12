@@ -6,11 +6,11 @@ import { useTransitionNavigate, isPlainClick } from '@/hooks/use-page-transition
 import { useSplashStore } from '@/hooks/use-splash'
 
 const NAV_COLUMNS = [
-	{ href: '/blog', label: 'BLOG', index: '01' },
-	{ href: '/projects', label: 'PROJECTS', index: '02' },
-	{ href: '/share', label: 'SHARE', index: '03' },
-	{ href: '/status', label: 'STATUS', index: '04' },
-	{ href: '/about', label: 'ABOUT', index: '05' }
+	{ href: '/rooms#blog', label: 'BLOG', index: '01' },
+	{ href: '/rooms#projects', label: 'PROJECTS', index: '02' },
+	{ href: '/rooms#share', label: 'SHARE', index: '03' },
+	{ href: '/rooms#status', label: 'STATUS', index: '04' },
+	{ href: '/rooms#about', label: 'ABOUT', index: '05' }
 ]
 
 function FlowLine() {
